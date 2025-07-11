@@ -158,6 +158,18 @@
         "type" : "header"
       },
       {
+        "name": "checkboxDisable",
+        "label": "@@form.listgrid.checkboxDisable@@",
+        "type": "checkbox",
+        "value": "False",
+        "options": [
+          {
+            "value": "true",
+            "label": ""
+          }
+        ]
+      },
+      {
         "name" : "readonly",
         "label" : "@@form.formgrid.readonly@@",
         "type" : "checkbox",
