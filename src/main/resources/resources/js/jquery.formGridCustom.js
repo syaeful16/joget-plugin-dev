@@ -8,8 +8,13 @@
 
         init: function(args) {
             messages = args.messages;
+
+            console.log(messages);
+
             return this.each(function(){
                 var thisObj = $(this);
+                console.log("didalem")
+                console.log(thisObj);
                 $(this).find("table").data("options", args.options);
 
                 if (jQuery.browser.msie && jQuery.browser.version === '9.0'){
@@ -268,6 +273,7 @@
 
         decorateRow: function(row) {
             var td = $('<td class="grid-action-cell"></td>');
+            $(td).append('<a class="grid-action-duplicate far fa-copy" style="display:inline-block; height:16px; width:16px;" href="#" title="'+ messages['form.formgrid.duplicateRow'] +'"><span>'+ messages['form.formgrid.duplicateRow'] +'</span></a>');
             $(td).append('<a class="grid-action-edit" href="#" title="'+ messages['form.formgrid.editRow'] +'"><span>'+ messages['form.formgrid.editRow'] +'</span></a>');
             $(td).append('<a class="grid-action-delete" href="#" title="'+ messages['form.formgrid.deleteRow'] +'"><span>'+ messages['form.formgrid.deleteRow'] +'</span></a>');
             $(td).append('<a class="grid-action-moveup" href="#" title="'+ messages['form.formgrid.moveUp'] +'"><span>'+ messages['form.formgrid.moveUp'] +'</span></a>');
@@ -533,7 +539,7 @@
                     var arr = $(container).data("selected_rows");
 
                     arr.forEach(element => {
-                        $(element).enterpriseformgrid("deleteRow", true);
+                        $(element).enterpriseformgridcustom("deleteRow", true);
                     });
 
                     $(container).find(".grid-checkbox-parent").prop('checked', false);
@@ -570,7 +576,7 @@
         }
     };
 
-    $.fn.enterpriseformgrid = function( method ) {
+    $.fn.formGridCustom = function( method ) {
         console.log(typeof method)
 
         if ( methods[method] ) {

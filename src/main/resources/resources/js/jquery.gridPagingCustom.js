@@ -91,7 +91,7 @@
 
                 methods.refresh.call(thisObj);
 
-                $(thisObj).enterpriseformgrid("refreshIndex");
+                $(thisObj).enterpriseformgridcustom("refreshIndex");
             });
         },
 
@@ -189,7 +189,7 @@
         }
     };
 
-    $.fn.gridPaging = function( method ) {
+    $.fn.gridPagingCustom = function( method ) {
 
         if ( methods[method] ) {
             return methods[method].apply( this, Array.prototype.slice.call( arguments, 1 ));
