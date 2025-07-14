@@ -1,5 +1,6 @@
 package com.syan.dev.lib;
 
+import com.syan.dev.services.FormGridCustomService;
 import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.joget.apps.app.dao.DatalistDefinitionDao;
@@ -8,28 +9,27 @@ import org.joget.apps.app.model.AppDefinition;
 import org.joget.apps.app.model.DatalistDefinition;
 import org.joget.apps.app.model.FormDefinition;
 import org.joget.apps.app.service.AppPluginUtil;
-import org.joget.apps.app.service.AppService;
 import org.joget.apps.app.service.AppUtil;
+import org.joget.apps.datalist.model.DataList;
+import org.joget.apps.datalist.model.DataListBinder;
 import org.joget.apps.datalist.model.DataListCollection;
+import org.joget.apps.datalist.model.DataListFilterQueryObject;
+import org.joget.apps.datalist.service.DataListService;
 import org.joget.apps.form.lib.Grid;
 import org.joget.apps.form.lib.SelectBox;
 import org.joget.apps.form.model.*;
 import org.joget.apps.form.service.FormService;
 import org.joget.apps.form.service.FormUtil;
 import org.joget.commons.util.LogUtil;
-import org.joget.commons.util.SetupManager;
+import org.joget.commons.util.SecurityUtil;
 import org.joget.commons.util.StringUtil;
 import org.joget.commons.util.UuidGenerator;
-import org.joget.workflow.util.WorkflowUtil;
+import org.joget.workflow.model.WorkflowAssignment;
+import org.joget.workflow.model.service.WorkflowManager;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-import javax.servlet.http.HttpServletRequest;
 
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
 import java.util.*;
 
 public class FormGridCustom extends Element implements FormBuilderPaletteElement, FormContainer, GridInnerDataRetriever {
@@ -46,6 +46,8 @@ public class FormGridCustom extends Element implements FormBuilderPaletteElement
     protected Form form;
     protected FormData formData;
 
+    private final FormGridCustomService formGridHeaderService = new FormGridCustomService();
+
     @Override
     public String renderTemplate(FormData formData, Map dataModel) {
         this.formData = formData;
@@ -59,103 +61,79 @@ public class FormGridCustom extends Element implements FormBuilderPaletteElement
         Map<String, Map<String, String>> headers = getHeaderMap(formData);
         dataModel.put("headers", headers);
 
-        LogUtil.info(this.getClassName(), "FormData : " + formData.toString());
         String optionsJson = this.getOptionsJson(headers, formData);
         LogUtil.info(this.getClassName(), "Options JSON : " + optionsJson);
         dataModel.put("optionsJson", optionsJson);
 
         FormRowSet rows = this.getRows(formData);
+        if (rows != null && !rows.isEmpty()) {
+            for (FormRow row : rows) {
+                JSONObject json = new JSONObject(row);
+                LogUtil.info(this.getClassName(), "Row JSON: " + json.toString());
+            }
+        } else {
+            LogUtil.info(this.getClassName(), "No rows found.");
+        }
         dataModel.put("rows", rows);
 
         String buttonLabel = "";
-        if ("true".equals(this.getPropertyString("readonly"))) {
-            buttonLabel = this.getPropertyString("submit-label-readonly");
-            if (buttonLabel.isEmpty()) {
+        if ("true".equals(getPropertyString("readonly"))) {
+            buttonLabel = getPropertyString("submit-label-readonly");
+            if (buttonLabel.isEmpty())
                 buttonLabel = "Close";
-            }
         } else {
-            buttonLabel = this.getPropertyString("submit-label-normal");
-            if (buttonLabel.isEmpty()) {
+            buttonLabel = getPropertyString("submit-label-normal");
+            if (buttonLabel.isEmpty())
                 buttonLabel = "Submit";
+        }
+        dataModel.put("buttonLabel", buttonLabel);
+
+        String json = getSelectedFormJson();
+        dataModel.put("json", json);
+
+        AppDefinition appDef = AppUtil.getCurrentAppDefinition();
+        dataModel.put("appId", appDef.getAppId());
+        dataModel.put("appVersion", appDef.getVersion());
+
+        Object requestParamsProperty = getProperty("requestParams");
+        if (requestParamsProperty != null && requestParamsProperty instanceof Object[]) {
+            StringBuilder requestJson = new StringBuilder("[");
+
+            for (Object param : (Object[])requestParamsProperty) {
+                Map paramMap = (Map)param;
+
+                if (requestJson.length() > 1)
+                    requestJson.append(",");
+
+                requestJson.append("{");
+                requestJson.append("param:'").append(paramMap.get("param")).append("',");
+                requestJson.append("field:'").append(paramMap.get("field")).append("',");
+                requestJson.append("defaultValue:'").append(paramMap.get("defaultValue")).append("'");
+                requestJson.append("}");
             }
+
+            requestJson.append("]");
+            if (requestJson.length() > 2)
+                dataModel.put("requestParams", requestJson.toString());
         }
 
-        dataModel.put("buttonLabel", StringEscapeUtils.escapeHtml(buttonLabel));
-
+        String nonceForm = SecurityUtil.generateNonce(new String[] { "EmbedForm", appDef.getAppId(), appDef.getVersion().toString(), json }, 1);
+        dataModel.put("nonceForm", nonceForm);
 
         return FormUtil.generateElementHtml(this, formData, template, dataModel);
     }
 
-    // Get Header for naming Header table
     protected Map<String, Map<String, String>> getHeaderMap(FormData formData) {
         this.formData = formData;
         if (this.headerMap == null) {
-            this.headerMap = new LinkedHashMap<>();
-
-            // get property with name "options"
             Object optionProperty = getProperty("options");
 
             if (optionProperty instanceof Collection) {
-                for (Map<String, String> optMap : (Collection<Map<String, String>>) optionProperty) {
-                    Object value = optMap.get("value");
-                    Object label = optMap.get("label");
-
-                    // if value and label not empty add to header map
-                    if (value != null) {
-                        if (label != null) {
-                            optMap.put("label", StringUtil.stripHtmlRelaxed(label.toString()));
-                        }
-                        this.headerMap.put(value.toString(), optMap);
-                    }
-
-                    String formatType = optMap.get("formatType");
-                    String format =  optMap.get("format");
-
-                    if (format != null && formatType != null && "date".equalsIgnoreCase(formatType) && "UTC".equalsIgnoreCase(format)) {
-                        HttpServletRequest request = WorkflowUtil.getHttpServletRequest();
-                        Locale locale = request.getLocale();
-
-                        if (locale != null && locale.toString().startsWith("zh")) {
-                            WorkflowUtil.getHttpServletRequest().setAttribute("currentLocale", locale);
-                            format = "yyyy-MM-dd";
-                        } else {
-                            SetupManager setupManager = (SetupManager)AppUtil.getApplicationContext().getBean("setupManager");
-                            if ("true".equalsIgnoreCase(setupManager.getSettingValue("dateFormatFollowLocale"))) {
-                                DateFormat dateInstance = DateFormat.getDateInstance(3, locale);
-
-                                if (dateInstance instanceof SimpleDateFormat) {
-                                    format = ((SimpleDateFormat)dateInstance).toPattern();
-                                    format = format.replaceAll("MM", "M");
-                                    format = format.replaceAll("M", "MM");
-                                    format = format.replaceAll("dd", "d");
-                                    format = format.replaceAll("d", "dd");
-                                }
-                            } else {
-                                format = setupManager.getSettingValue("systemDateFormat");
-                            }
-                        }
-
-                        if (format == null || format.isEmpty()) {
-                            format = "MM/dd/yyyy";
-                        }
-                        if (!format.contains(":mm")) {
-                            format = format + " HH:mm";
-                        }
-
-                        // Offset dalam milidetik (untuk menggantikan getRawOffset)
-                        int localOffsetMs = ZonedDateTime.now(ZoneId.systemDefault()).getOffset().getTotalSeconds() * 1000;
-                        int defaultOffsetMs = ZonedDateTime.now().getOffset().getTotalSeconds() * 1000;
-
-                        optMap.put("format", "UTC|" + format + "|" + localOffsetMs + "|" + defaultOffsetMs);
-                    } else if (formatType != null && (formatType.equals("file") || formatType.equals("image")) && format != null && !format.isEmpty()) {
-                        // Format itu merupakan formid yang di assigned pada form grid
-                        AppService appService = (AppService)AppUtil.getApplicationContext().getBean("appService");
-                        optMap.put("tableName", appService.getFormTableName(AppUtil.getCurrentAppDefinition(), format));
-                    }
-                }
+                this.headerMap = formGridHeaderService.getHeader((Collection<Map<String, String>>) optionProperty, formData);
+            } else {
+                this.headerMap = new LinkedHashMap<>();
             }
         }
-
         return this.headerMap;
     }
 
@@ -354,6 +332,88 @@ public class FormGridCustom extends Element implements FormBuilderPaletteElement
         }
     }
 
+    protected void retrieveDatalistOptions(Collection<String> values, Element elment, Map<String, String> options, FormData formData) {
+        DataListCollection rows = null;
+        AppDefinition appDef = AppUtil.getCurrentAppDefinition();
+        DatalistDefinitionDao datalistDefinitionDao = (DatalistDefinitionDao)AppUtil.getApplicationContext().getBean("datalistDefinitionDao");
+        DatalistDefinition datalistDefinition = datalistDefinitionDao.loadById(elment.getPropertyString("listId"), appDef);
+
+        LogUtil.info(this.getClassName(), "datalistDefinition : " + datalistDefinition.getJson());
+
+        if (datalistDefinition != null) {
+            String json = datalistDefinition.getJson();
+            Object requestParamsProperty = elment.getProperty("requestParams");
+
+            if (formData != null && requestParamsProperty != null && requestParamsProperty instanceof Object[]) {
+                Form form = FormUtil.findRootForm(elment);
+
+                for (Object param : (Object[])requestParamsProperty) {
+                    Map paramMap = (Map)param;
+
+                    String parameter = (String)paramMap.get("param");
+                    String fieldId = (String)paramMap.get("field");
+                    String defaultValue = (String)paramMap.get("defaultValue");
+
+                    LogUtil.info(this.getClassName(), "Param : " + parameter + " fieldId : " + fieldId + " defaultValue : " + defaultValue);
+
+                    String[] paramValues = null;
+                    String paramValue = "";
+
+                    if (fieldId != null && !fieldId.isEmpty()) {
+                        Element field = FormUtil.findElement(fieldId, (Element)form, formData);
+                        paramValues = FormUtil.getElementPropertyValues(field, formData);
+                    }
+
+                    if (paramValues == null || paramValues.length == 0)
+                        paramValues = new String[] { defaultValue };
+
+                    paramValue = FormUtil.generateElementPropertyValues(paramValues);
+                    json = json.replaceAll(StringUtil.escapeRegex("#requestParam." + parameter + "#"), StringUtil.escapeRegex(paramValue));
+                }
+            }
+
+            DataListService dataListService = (DataListService)AppUtil.getApplicationContext().getBean("dataListService");
+            DataList dataList = dataListService.fromJson(json);
+            DataListBinder binder = dataList.getBinder();
+
+            String idField = elment.getPropertyString("idField");
+            if (idField == null || idField.isEmpty()) {
+                idField = binder.getPrimaryKeyColumnName();
+            }
+
+            if (binder != null) {
+                DataListFilterQueryObject[] datalistFilter = dataList.getFilterQueryObjects();
+                Collection<DataListFilterQueryObject> queries = new ArrayList<>(Arrays.asList(datalistFilter));
+
+                if (values != null && !values.isEmpty()) {
+                    DataListFilterQueryObject queryObject = new DataListFilterQueryObject();
+
+                    StringBuilder query = new StringBuilder(binder.getColumnName(idField) + " in (");
+                    for (String v : values) {
+                        query.append("?,");
+                    }
+
+                    query = new StringBuilder(query.toString().replaceFirst(",$", ")"));
+                    queryObject.setOperator("AND");
+                    queryObject.setQuery(query.toString());
+                    queryObject.setValues(values.toArray(new String[0]));
+                    queries.add(queryObject);
+                }
+                rows = binder.getData(dataList, binder.getProperties(), queries.toArray(new DataListFilterQueryObject[0]), null, null, null, Integer.valueOf(100000));
+            }
+
+            if (rows != null && !rows.isEmpty()) {
+                String displayField = elment.getPropertyString("displayField");
+
+                if (idField != null && displayField != null) {
+                    for (Object r : rows) {
+                        options.put((String) DataListService.evaluateColumnValueFromRow(r, idField), (String) DataListService.evaluateColumnValueFromRow(r, displayField));
+                    }
+                }
+            }
+        }
+    }
+
     protected FormRowSet getRows(FormData formData) {
         this.formData = formData;
 
@@ -368,7 +428,7 @@ public class FormGridCustom extends Element implements FormBuilderPaletteElement
 
             if (json != null && !json.isEmpty()) {
                 try {
-                    rowSet = this.parseFormRowSetFromJson(json);
+                    rowSet = FormUtil.jsonToFormRowSet(json);
                 } catch (Exception ex) {
                     LogUtil.error(Grid.class.getName(), ex, "Error parsing grid JSON");
                 }
@@ -414,11 +474,11 @@ public class FormGridCustom extends Element implements FormBuilderPaletteElement
                 if (binderRowSet != null) {
                     if (!binderRowSet.isMultiRow()) {
                         if (!binderRowSet.isEmpty()) {
-                            FormRow row = (FormRow)binderRowSet.get(0);
+                            FormRow row = binderRowSet.get(0);
                             String jsonValue = row.getProperty(id);
 
                             try {
-                                rowSet = this.parseFormRowSetFromJson(jsonValue);
+                                rowSet = FormUtil.jsonToFormRowSet(jsonValue);
                             } catch (Exception ex) {
                                 LogUtil.error(Grid.class.getName(), ex, "Error parsing grid JSON");
                             }
@@ -458,8 +518,47 @@ public class FormGridCustom extends Element implements FormBuilderPaletteElement
         return this.cachedRowSet.get(formData);
     }
 
-    protected FormRowSet parseFormRowSetFromJson(String json) {
-        return FormUtil.jsonToFormRowSet(json);
+    protected void prepareUiJsonData(FormData formData, FormRowSet oriRows) {
+        if (oriRows != null && !oriRows.isEmpty()) {
+            FormRow row = oriRows.get(0);
+            if (!row.containsKey("jsonrow")) {
+                FormRowSet rowSet = this.convertFormRowToJson(oriRows);
+                this.cachedRowSet.put(formData, rowSet);
+            }
+        }
+
+    }
+
+    protected FormRowSet convertFormRowToJson(FormRowSet oriRowSet) throws JSONException {
+        FormRowSet rowSet = new FormRowSet();
+        rowSet.setMultiRow(true);
+
+        for(FormRow row : oriRowSet) {
+            JSONObject jsonObject = new JSONObject();
+            FormRow newRow = new FormRow();
+
+
+            LogUtil.info(this.getClassName(), row.toString());
+            for(Map.Entry entry : row.entrySet()) {
+                String key = (String)entry.getKey();
+                String value = entry.getValue().toString();
+                jsonObject.put(key, value);
+                newRow.setProperty(key, value);
+            }
+
+            newRow.setProperty("jsonrow", jsonObject.toString());
+            if (row.getDeleteFilePathMap() != null && !row.getDeleteFilePathMap().isEmpty()) {
+                newRow.setDeleteFilePathMap(row.getDeleteFilePathMap());
+            }
+
+            if (row.getTempFilePathMap() != null && !row.getTempFilePathMap().isEmpty()) {
+                newRow.setTempFilePathMap(row.getTempFilePathMap());
+            }
+
+            rowSet.add(newRow);
+        }
+
+        return rowSet;
     }
 
     protected FormRow convertJsonToFormRow(String json) throws JSONException {
@@ -535,77 +634,98 @@ public class FormGridCustom extends Element implements FormBuilderPaletteElement
         return newRow;
     }
 
-    protected void prepareUiJsonData(FormData formData, FormRowSet oriRows) {
-        if (oriRows != null && !oriRows.isEmpty()) {
-            FormRow row = oriRows.get(0);
-            if (!row.containsKey("jsonrow")) {
-                FormRowSet rowSet = this.convertFormRowToJson(oriRows);
-                this.cachedRowSet.put(formData, rowSet);
-            }
-        }
 
-    }
 
-    protected FormRowSet convertFormRowToJson(FormRowSet oriRowSet) throws JSONException {
+    protected FormRowSet convertJsonToFormRowSet(FormRowSet oriRowSet) throws JSONException {
         FormRowSet rowSet = new FormRowSet();
         rowSet.setMultiRow(true);
-
-        for(FormRow row : oriRowSet) {
-            JSONObject jsonObject = new JSONObject();
-            FormRow newRow = new FormRow();
-
-
-            LogUtil.info(this.getClassName(), row.toString());
-//            for(Map.Entry entry : row.entrySet()) {
-//                String key = (String)entry.getKey();
-//                String value = entry.getValue().toString();
-//                jsonObject.put(key, value);
-//                newRow.setProperty(key, value);
-//            }
-//
-//            newRow.setProperty("jsonrow", jsonObject.toString());
-//            if (row.getDeleteFilePathMap() != null && !row.getDeleteFilePathMap().isEmpty()) {
-//                newRow.setDeleteFilePathMap(row.getDeleteFilePathMap());
-//            }
-//
-//            if (row.getTempFilePathMap() != null && !row.getTempFilePathMap().isEmpty()) {
-//                newRow.setTempFilePathMap(row.getTempFilePathMap());
-//            }
-//
-//            rowSet.add(newRow);
+        int i = 0;
+        for (FormRow row : oriRowSet) {
+            FormRow newRow = convertJsonToFormRow(row.get("jsonrow").toString());
+            if (getPropertyString("enableSorting") != null && getPropertyString("enableSorting").equals("true") && getPropertyString("sortField") != null && !getPropertyString("sortField").isEmpty())
+                newRow.put(getPropertyString("sortField"), Integer.toString(i));
+            if (row.getDeleteFilePathMap() != null && !row.getDeleteFilePathMap().isEmpty())
+                newRow.setDeleteFilePathMap(row.getDeleteFilePathMap());
+            if (row.getTempFilePathMap() != null && !row.getTempFilePathMap().isEmpty())
+                newRow.setTempFilePathMap(row.getTempFilePathMap());
+            rowSet.add(newRow);
+            i++;
         }
-
         return rowSet;
     }
 
-    protected void retrieveDatalistOptions(Collection<String> values, Element elment, Map<String, String> options, FormData formData) {
-        DataListCollection rows = null;
-        AppDefinition appDef = AppUtil.getCurrentAppDefinition();
-        DatalistDefinitionDao datalistDefinitionDao = (DatalistDefinitionDao)AppUtil.getApplicationContext().getBean("datalistDefinitionDao");
-        DatalistDefinition datalistDefinition = (DatalistDefinition)datalistDefinitionDao.loadById(elment.getPropertyString("listId"), appDef);
 
-        if (datalistDefinition != null) {
-
-        }
-    }
 
     protected Form getForm() {
         if (this.form == null) {
             String formDefId = getPropertyString("formDefId");
+
             if (formDefId.isEmpty()) {
                 if (getStoreBinder() != null)
                     formDefId = ((FormBinder)getStoreBinder()).getPropertyString("formDefId");
+
                 if (formDefId.isEmpty() && getLoadBinder() != null)
                     formDefId = ((FormBinder)getLoadBinder()).getPropertyString("formDefId");
             }
-            LogUtil.info(this.getClassName(), formDefId);
-
             if (!formDefId.isEmpty()) {
                 AppDefinition appDef = AppUtil.getCurrentAppDefinition();
+
+                if (appDef != null) {
+                    FormDefinitionDao formDefinitionDao = (FormDefinitionDao)AppUtil.getApplicationContext().getBean("formDefinitionDao");
+                    FormService formService = (FormService)AppUtil.getApplicationContext().getBean("formService");
+                    FormDefinition formDef = formDefinitionDao.loadById(formDefId, appDef);
+
+                    if (formDef != null) {
+                        String json = formDef.getJson();
+                        if (this.formData != null && this.formData.getProcessId() != null && !this.formData.getProcessId().isEmpty()) {
+                            WorkflowManager wm = (WorkflowManager)AppUtil.getApplicationContext().getBean("workflowManager");
+                            WorkflowAssignment wfAssignment = this.formData.getAssignment();
+                            if (wfAssignment == null)
+                                wfAssignment = wm.getAssignmentByProcess(this.formData.getProcessId());
+                            json = AppUtil.processHashVariable(json, wfAssignment, "json", null);
+                        }
+                        this.form = (Form)formService.createElementFromJson(json);
+                        Boolean readonly = "true".equalsIgnoreCase(getPropertyString("readonly"));
+                        Boolean readonlyLabel = "true".equalsIgnoreCase(getPropertyString("readonlyLabel"));
+                        if (readonly || readonlyLabel)
+                            FormUtil.setReadOnlyProperty(this.form, readonly, readonlyLabel);
+                    }
+                }
             }
         }
-
         return this.form;
+    }
+
+    protected String getSelectedFormJson() {
+        Form form = getForm();
+
+        if (form != null)
+            try {
+                FormService formService = (FormService)AppUtil.getApplicationContext().getBean("formService");
+
+                String json = formService.generateElementJson(form);
+                try {
+                    JSONObject temp = new JSONObject(json);
+                    JSONObject jsonProps = temp.getJSONObject("properties");
+                    JSONObject jsonLoadBinder = new JSONObject();
+
+                    jsonLoadBinder.put("className", "org.joget.plugin.enterprise.JsonFormBinder");
+                    jsonLoadBinder.put("properties", new JSONObject());
+
+                    jsonProps.put("loadBinder", jsonLoadBinder);
+                    jsonProps.put("storeBinder", jsonLoadBinder);
+                    json = temp.toString();
+                } catch (Exception exception) {
+
+                }
+
+                return SecurityUtil.encrypt(json);
+            } catch (Exception e) {
+
+            }
+
+        setProperty("readonly", "true");
+        return "";
     }
 
     @Override
