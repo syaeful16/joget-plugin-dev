@@ -1,5 +1,5 @@
+<link rel="stylesheet" type="text/css" href="${request.contextPath}/plugin/com.syan.dev.lib.FormGridCustom/css/formGridStyle.css" />
 <div class="form-cell full_width_field" ${elementMetaData!}>
-
 <#if !(request.getAttribute("com.syan.dev.lib.FormGridCustom")??) >
     <script type="text/javascript" src="${request.contextPath}/plugin/com.syan.dev.lib.FormGridCustom/js/jquery.formGridCustom.js"></script>
     <script type="text/javascript" src="${request.contextPath}/plugin/com.syan.dev.lib.FormGridCustom/js/jquery.gridPagingCustom.js"></script>
@@ -29,7 +29,13 @@
         $("#formgrid_${elementParamName!}_${element.properties.elementUniqueKey!}").gridPagingCustom({customSize: '${element.properties.pageSize!}' <#if element.properties.enableSorting! == 'true'>, dataSorting : true</#if>});
     })
 
+    function formgrid_${elementParamName!}_${element.properties.elementUniqueKey!}_duplicate(args){
+        console.log(args)
+        $("#formgrid_${elementParamName!}_${element.properties.elementUniqueKey!}").formGridCustom("duplicateRow", args);
+    }
+
     function formgrid_${elementParamName!}_${element.properties.elementUniqueKey!}_add(args){
+        console.log(args)
         $("#formgrid_${elementParamName!}_${element.properties.elementUniqueKey!}").formGridCustom("addRow", args);
     }
 
@@ -97,6 +103,29 @@
                     </#list>
                     <td style="display:none;"><textarea id="${elementParamName!}_jsonrow" name="${elementParamName!}_jsonrow"></textarea></td>
                 </tr>
+                <#list rows as row>
+                    <tr class="grid-row" id="{elementParamName!}_row_${row_index}">
+                        <#if element.properties.disabledDelete! != 'true' && element.properties.readonly! != 'true'>
+                            <td class="td-checkbox">
+                                <input type="checkbox" id="${elementParamName!}_grid-checkbox" class="grid-checkbox-children">
+                            </td>
+                        </#if>
+                        <#if element.properties.showRowNumber?? && element.properties.showRowNumber! != "">
+                            <td><span class="grid-cell rowNumber">${row_index + 1}</span></td>
+                        </#if>
+                        <#list headers?keys as header>
+                            <td><span id="${elementParamName!}_${header?html}" name="${elementParamName!}_${header?html}" column_key="${header?html}" column_type="${headers[header]['formatType']!?html}" column_format="${headers[header]['format']!?html}" class="grid-cell">
+                            <#attempt>
+                                ${element.formatColumn(header, headers[header], row["id"], row[header], appId, appVersion, request.contextPath)}
+                                <#recover>
+                                    ${row[header]!?html}
+                            </#attempt>
+                        </span>
+                            </td>
+                        </#list>
+                        <td style="display:none;"><textarea id="${elementParamName!}_jsonrow" name="${elementParamName!}_jsonrow_${row_index}">${row['jsonrow']!?html}</textarea></td>
+                    </tr>
+                </#list>
             </tbody>
         </table>
     </div>

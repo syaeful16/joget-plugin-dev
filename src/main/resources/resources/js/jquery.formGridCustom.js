@@ -66,8 +66,7 @@
 
         add: function() {
             return this.each(function(){
-                console.log($(this).attr('id'))
-                console.log($(this).find('#formUrl'))
+                console.log("attr id - add : " + $(this).attr('id')+"_add")
                 methods.popupForm.call(this, $(this).attr('id'), $(this).find('#formUrl').val(), $(this).find('#json').val(), $(this).find('#nonce').val(), $(this).attr('id')+"_add", "{}", "", $(this).find('#height').val(), $(this).find('#width').val());
             });
         },
@@ -76,14 +75,28 @@
             var row = $(this).closest("tr");
             var container = $(row).closest("table").parent();
 
+            console.log("attr id - edit : " + $(container).attr('id')+"_edit")
             methods.popupForm.call(this, $(container).attr('id'), $(container).find('#formUrl').val(), $(container).find('#json').val(), $(container).find('#nonce').val(), $(container).attr('id')+"_edit", "{rowId:'"+$(row).attr('id')+"'}", $(row).find('textarea').val(), $(container).find('#height').val(), $(container).find('#width').val());
         },
 
-        popupForm: function(id, url, json, nonce, callback, setting, value, height, width){
-            console.log("id : " + id)
-            console.log("url : " + url)
-            console.log("json : " + json)
+        duplicate: function() {
+            var row = $(this).closest("tr");
+            var container = $(row).closest("table").parent();
 
+            var funcName = $(container).attr('id')+"_duplicate";
+
+            console.log("row : " + row);
+            console.log("container : " + container);
+            console.log("attr id - duplicate : " + $(container).attr('id')+"_duplicate");
+            // Cek jika fungsi ada di global scope (window)
+            if (typeof window[funcName] === 'function') {
+                window[funcName].call(this); // panggil fungsi dengan konteks elemen
+            } else {
+                console.warn('Function', funcName, 'not found.');
+            }
+        },
+
+        popupForm: function(id, url, json, nonce, callback, setting, value, height, width){
             if (value != undefined && value != '') {
                 var datas = eval("(" + value + ")");
                 if (datas.id) {
@@ -120,6 +133,20 @@
             JPopup.show(frameId, url, params, "", width, height);
         },
 
+        duplicateRow: function(args){
+            return $(this).each(function() {
+                // get table
+                var table = $(this).find("table");
+                var row = $(table).find("#"+args.rowId);
+                console.log("======= duplicateRow ======= ");
+                console.log(table)
+                console.log(row)
+                console.log(args.result)
+                console.log("======= END duplicateRow ======= ");
+
+            });
+        },
+
         addRow: function(args){
             return $(this).each(function(){
                 var frameId = methods.getFrameId($(this).attr('id'));
@@ -137,6 +164,9 @@
 
                     //Uncheck new row
                     newRow.find(".grid-checkbox-children").prop("checked", false);
+
+                    console.log(newRow)
+                    console.log(args.result)
 
                     methods.decorateRow(newRow);
                     methods.fillValue(this, newRow, args.result);
@@ -163,11 +193,17 @@
         editRow: function(args){
             return $(this).each(function(){
                 var frameId = methods.getFrameId($(this).attr('id'));
+                console.log(args.rowId);
 
                 if (methods.checkDuplicate(this, args) && !$(this).hasClass("readonly")) {
                     // get table
                     var table = $(this).find("table");
                     var row = $(table).find("#"+args.rowId);
+
+                    console.log("======= editRow ======= ");
+                    console.log(row);
+                    console.log(args.result);
+                    console.log("======= editRow ======= ");
 
                     methods.fillValue(this, row, args.result);
                     methods.updateAllRowIndex(table);
@@ -273,11 +309,16 @@
 
         decorateRow: function(row) {
             var td = $('<td class="grid-action-cell"></td>');
-            $(td).append('<a class="grid-action-duplicate far fa-copy" style="display:inline-block; height:16px; width:16px;" href="#" title="'+ messages['form.formgrid.duplicateRow'] +'"><span>'+ messages['form.formgrid.duplicateRow'] +'</span></a>');
+            $(td).append('<a class="grid-action-duplicate far fa-copy" href="#" title="'+ messages['form.formgrid.duplicateRow'] +'"><span>'+ messages['form.formgrid.duplicateRow'] +'</span></a>');
             $(td).append('<a class="grid-action-edit" href="#" title="'+ messages['form.formgrid.editRow'] +'"><span>'+ messages['form.formgrid.editRow'] +'</span></a>');
             $(td).append('<a class="grid-action-delete" href="#" title="'+ messages['form.formgrid.deleteRow'] +'"><span>'+ messages['form.formgrid.deleteRow'] +'</span></a>');
             $(td).append('<a class="grid-action-moveup" href="#" title="'+ messages['form.formgrid.moveUp'] +'"><span>'+ messages['form.formgrid.moveUp'] +'</span></a>');
             $(td).append('<a class="grid-action-movedown" href="#" title="'+ messages['form.formgrid.moveDown'] +'"><span>'+ messages['form.formgrid.moveDown'] +'</span></a>');
+            $(td).find('.grid-action-duplicate').click(function() {
+                methods.duplicate.apply(this, arguments);
+                console.log(arguments)
+                return false;
+            });
             $(td).find('.grid-action-edit').click(function() {
                 methods.edit.apply(this, arguments);
                 return false;
@@ -299,6 +340,11 @@
         },
 
         fillValue: function(element, row, json) {
+            console.log('====== fill value ======');
+            console.log(element);
+            console.log(row);
+            console.log(json);
+            console.log('====== end fill value ======');
             var obj = eval("["+json+"]");
             $(row).find('span.grid-cell').each(function(){
                 var column = $(this).attr("column_key");
@@ -577,7 +623,7 @@
     };
 
     $.fn.formGridCustom = function( method ) {
-        console.log(typeof method)
+        console.log(method)
 
         if ( methods[method] ) {
             return methods[method].apply( this, Array.prototype.slice.call( arguments, 1 ));
