@@ -13,8 +13,6 @@
 
             return this.each(function(){
                 var thisObj = $(this);
-                console.log("didalem")
-                console.log(thisObj);
                 $(this).find("table").data("options", args.options);
 
                 if (jQuery.browser.msie && jQuery.browser.version === '9.0'){
@@ -135,15 +133,95 @@
 
         duplicateRow: function(args){
             return $(this).each(function() {
-                // get table
-                var table = $(this).find("table");
-                var row = $(table).find("#"+args.rowId);
-                console.log("======= duplicateRow ======= ");
-                console.log(table)
-                console.log(row)
-                console.log(args.result)
-                console.log("======= END duplicateRow ======= ");
+                var row = $(this).closest("tr");
+                var container = $(row).closest("table").parent();
+                var showPopup = $(container).find('#popupDuplicate').val();
 
+                // Ambil isi JSON dari textarea dalam row
+                var json = $(row).find("textarea").val();
+                if (!json) {
+                    console.warn("Tidak ada data untuk diduplikasi.");
+                    return;
+                }
+
+                var parsed;
+                try {
+                    parsed = JSON.parse(json);
+                } catch (e) {
+                    console.error("JSON tidak valid:", e);
+                    return;
+                }
+
+                // Buat duplikat aman: hapus ID atau ganti field unik jika perlu
+                if (parsed.id) {
+                    delete parsed.id;
+                }
+
+                // Hapus dari _tempRequestParamsMap juga
+                if (parsed._tempRequestParamsMap && parsed._tempRequestParamsMap.id) {
+                    delete parsed._tempRequestParamsMap.id;
+                }
+
+                console.log("Before")
+                console.log(parsed)
+                // Contoh: ganti nilai kolom unik agar tidak gagal saat checkDuplicate
+                var uniqueKey = $(container).find('#uniqueKey').val();
+                if (uniqueKey && parsed[uniqueKey]) {
+                    parsed[uniqueKey] += "_copy_" + Date.now(); // agar makin unik
+                }
+                console.log("After")
+                console.log(parsed)
+
+                var resultJson = JSON.stringify(parsed);
+
+                if (showPopup === 'true' || uniqueKey !== '') {
+                    // === MODE PAKAI POPUP ===
+                    methods.popupForm.call(this,
+                        $(container).attr('id'),
+                        $(container).find('#formUrl').val(),
+                        $(container).find('#json').val(),
+                        $(container).find('#nonce').val(),
+                        $(container).attr('id') + "_add", // callback
+                        "{}",                              // setting kosong
+                        resultJson,                        // data awal (prefilled)
+                        $(container).find('#height').val(),
+                        $(container).find('#width').val()
+                    );
+                } else {
+                    var args = { result: resultJson };
+
+                    if (!methods.checkDuplicate(container, args)) {
+                        alert("Data duplikat ditemukan. Tidak bisa menambahkan row yang sama persis.");
+                        return;
+                    }
+
+                    var table = $(container).find("> table");
+                    var template = $(table).find(".grid-row-template");
+                    var newRow = $(template).clone();
+
+                    newRow.removeClass("grid-row-template");
+                    newRow.css("display", "");
+                    newRow.addClass("grid-row");
+
+                    // Uncheck semua checkbox (jika ada)
+                    newRow.find(".grid-checkbox-children").prop("checked", false);
+
+                    // Isi value ke dalam row
+                    methods.decorateRow(newRow);
+                    methods.fillValue(container, newRow, resultJson);
+
+                    // Append ke table
+                    table.append(newRow);
+
+                    // Hitung ulang index
+                    var rowIndex = $(table).find("tr.grid-row").length - 1;
+                    methods.updateRowIndex(newRow, rowIndex);
+                    methods.disabledMoveAction($(newRow).closest("table"));
+
+                    // Trigger event & update UI
+                    $(container).trigger("change");
+                    methods.showHidePlusIcon(container);
+                }
             });
         },
 
@@ -164,9 +242,6 @@
 
                     //Uncheck new row
                     newRow.find(".grid-checkbox-children").prop("checked", false);
-
-                    console.log(newRow)
-                    console.log(args.result)
 
                     methods.decorateRow(newRow);
                     methods.fillValue(this, newRow, args.result);
@@ -199,11 +274,6 @@
                     // get table
                     var table = $(this).find("table");
                     var row = $(table).find("#"+args.rowId);
-
-                    console.log("======= editRow ======= ");
-                    console.log(row);
-                    console.log(args.result);
-                    console.log("======= editRow ======= ");
 
                     methods.fillValue(this, row, args.result);
                     methods.updateAllRowIndex(table);
@@ -315,8 +385,7 @@
             $(td).append('<a class="grid-action-moveup" href="#" title="'+ messages['form.formgrid.moveUp'] +'"><span>'+ messages['form.formgrid.moveUp'] +'</span></a>');
             $(td).append('<a class="grid-action-movedown" href="#" title="'+ messages['form.formgrid.moveDown'] +'"><span>'+ messages['form.formgrid.moveDown'] +'</span></a>');
             $(td).find('.grid-action-duplicate').click(function() {
-                methods.duplicate.apply(this, arguments);
-                console.log(arguments)
+                methods.duplicateRow.apply(this, arguments);
                 return false;
             });
             $(td).find('.grid-action-edit').click(function() {
@@ -537,7 +606,7 @@
             //update row even/odd css class
             $(row).removeClass("odd");
             $(row).removeClass("even");
-            if(rowIndex % 2 == 0){
+            if(rowIndex % 2 === 0){
                 $(row).addClass("even");
             }else{
                 $(row).addClass("odd");
@@ -585,7 +654,7 @@
                     var arr = $(container).data("selected_rows");
 
                     arr.forEach(element => {
-                        $(element).enterpriseformgridcustom("deleteRow", true);
+                        $(element).formGridCustom("deleteRow", true);
                     });
 
                     $(container).find(".grid-checkbox-parent").prop('checked', false);
