@@ -154,6 +154,34 @@
         "value" : "900"
       },
       {
+        "label" : "@@form.formgrid.duplicate@@",
+        "type" : "header"
+      },
+      {
+        "name": "disabledDuplicate",
+        "label": "@@form.listgrid.disabledDuplicate@@",
+        "type": "checkbox",
+        "value": "false",
+        "options": [
+          {
+            "value": "true",
+            "label": ""
+          }
+        ]
+      },
+      {
+        "name": "showPopupDuplicate",
+        "label": "@@form.listgrid.showPopupDuplicate@@",
+        "type": "checkbox",
+        "value": "false",
+        "options": [
+          {
+            "value": "true",
+            "label": ""
+          }
+        ]
+      },
+      {
         "label" : "@@form.formgrid.grid@@",
         "type" : "header"
       },
@@ -161,7 +189,7 @@
         "name": "checkboxDisable",
         "label": "@@form.listgrid.checkboxDisable@@",
         "type": "checkbox",
-        "value": "False",
+        "value": "false",
         "options": [
           {
             "value": "true",
@@ -173,7 +201,7 @@
         "name" : "readonly",
         "label" : "@@form.formgrid.readonly@@",
         "type" : "checkbox",
-        "value" : "False",
+        "value" : "false",
         "options" : [
           {
             "value" : "true",
