@@ -1,6 +1,21 @@
-.grid-action-duplicate {
-    display: inline-block;
-    height: 16px;
-    width: 16px;
-    margin-top: 3px;
+
+.grid.readonly.disabledDuplicate a.grid-action-duplicate,
+.grid.disabledDuplicate a.grid-action-duplicate
+{
+    display: none;
 }
+
+.grid table .grid-action-cell {
+    width: auto !important;
+    display: flex !important;
+    gap: 4px !important;
+    align-items: center !important;
+    justify-content: flex-end !important;
+}
+
+/*.grid-action-duplicate {*/
+/*    display: inline-block;*/
+/*    height: 16px;*/
+/*    width: 16px;*/
+/*    margin-top: 3px;*/
+/*}*/
