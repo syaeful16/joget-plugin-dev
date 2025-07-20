@@ -42,7 +42,7 @@
             display: none !important;
         }
     </style>
-    <div id="formgrid_${elementParamName!}_${element.properties.elementUniqueKey!}" name="${elementParamName!}" class="grid formgrid form-element <#if element.properties.readonly! == 'true'>readonly</#if> <#if element.properties.enableSorting! == 'true'>enableSorting</#if> <#if element.properties.disabledAdd! == 'true'>disabledAdd</#if> <#if element.properties.disabledDelete! == 'true'>disabledDelete</#if> <#if element.properties.disabledDuplicate! == 'true'>disabledDuplicate</#if>">
+    <div id="formgrid_${elementParamName!}_${element.properties.elementUniqueKey!}" name="${elementParamName!}" class="grid formgrid form-element <#if element.properties.readonly! == 'true'>readonly</#if> <#if element.properties.enableSorting! == 'true'>enableSorting</#if> <#if element.properties.disabledAdd! == 'true'>disabledAdd</#if> <#if element.properties.disabledDelete! == 'true'>disabledDelete</#if> <#if element.properties.disabledDuplicate! == 'true'>disabled-duplicate</#if>">
         <input type="hidden" disabled="disabled" id="formUrl" value="${request.contextPath}/web/app/${appId}/${appVersion}/form/embed?_submitButtonLabel=${buttonLabel!?html}">
         <input type="hidden" disabled="disabled" id="json" value="${json!}">
         <input type="hidden" disabled="disabled" id="appId" value="${appId!}">
