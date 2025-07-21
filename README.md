@@ -8,9 +8,10 @@
 ---
 
 ## ✨ Fitur Unggulan
+
+Version 1.0.0
 - 🔁 **Duplicate Row**  
 Duplikasikan baris data hanya dengan satu klik. Sangat berguna saat input data yang serupa secara berulang.
-
 - 🧰 **Meningkatkan Pengalaman Developer**  
 Fitur-fitur tambahan dirancang dengan mempertimbangkan kebutuhan umum para developer Joget.
 ```javascript
