@@ -1,6 +1,5 @@
 package com.syan.dev.lib;
 
-import com.syan.dev.services.FormGridCustomService;
 import com.syan.dev.utils.Utils;
 import org.apache.commons.lang3.StringEscapeUtils;
 import org.joget.apps.app.dao.DatalistDefinitionDao;
@@ -52,7 +51,6 @@ public class FormGridCustom extends Element implements FormBuilderPaletteElement
     protected Form form;
     protected FormData formData;
 
-    private final FormGridCustomService formGridHeaderService = new FormGridCustomService();
     private final Utils utils = new Utils();
 
     @Override
