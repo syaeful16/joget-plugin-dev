@@ -50,6 +50,7 @@ public class FormGridCustom extends Element implements FormBuilderPaletteElement
 
     protected Form form;
     protected FormData formData;
+    protected String formDefKeys;
 
     private final Utils utils = new Utils();
 
@@ -129,6 +130,8 @@ public class FormGridCustom extends Element implements FormBuilderPaletteElement
 
         String nonceForm = SecurityUtil.generateNonce(new String[] { "EmbedForm", appDef.getAppId(), appDef.getVersion().toString(), json }, 1);
         dataModel.put("nonceForm", nonceForm);
+
+        dataModel.put("formDefKeys", formDefKeys);
 
         return FormUtil.generateElementHtml(this, formData, template, dataModel);
     }
@@ -995,6 +998,7 @@ public class FormGridCustom extends Element implements FormBuilderPaletteElement
     protected Form getForm() {
         if (this.form == null) {
             String formDefId = getPropertyString("formDefId");
+            LogUtil.info(this.getClassName(), "formDefId :  " + formDefId);
 
             if (formDefId.isEmpty()) {
                 if (getStoreBinder() instanceof FormBinder) {
@@ -1013,8 +1017,13 @@ public class FormGridCustom extends Element implements FormBuilderPaletteElement
                     FormService formService = (FormService) AppUtil.getApplicationContext().getBean("formService");
 
                     FormDefinition formDef = formDefinitionDao.loadById(formDefId, appDef);
+
                     if (formDef != null) {
                         String json = formDef.getJson();
+
+                        try {
+                            formDefKeys = Utils.extractFieldIds(json);
+                        } catch (Exception e) {}
 
                         if (this.formData != null && this.formData.getProcessId() != null && !this.formData.getProcessId().isEmpty()) {
                             WorkflowManager wm = (WorkflowManager) AppUtil.getApplicationContext().getBean("workflowManager");
