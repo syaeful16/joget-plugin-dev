@@ -2,8 +2,6 @@
     var contextPath;
     var messages;
 
-    console.log("jquery enterprise loaded")
-
     var methods = {
 
         init: function(args) {
@@ -689,6 +687,13 @@
                 }
             });
         }
+    };
+
+    $.formGridCustom = {
+        fillValue: methods.fillValue,
+        updateRowIndex: methods.updateRowIndex,
+        disabledMoveAction: methods.disabledMoveAction,
+        showHidePlusIcon: methods.showHidePlusIcon
     };
 
     $.fn.formGridCustom = function( method ) {
