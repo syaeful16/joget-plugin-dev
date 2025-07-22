@@ -54,6 +54,7 @@
         <input type="hidden" disabled="disabled" id="validateMaxRow" value="${element.properties.validateMaxRow!}">
         <input type="hidden" disabled="disabled" id="deleteMessage" value="${element.properties.deleteMessage!?html}">
         <input type="hidden" disabled="disabled" id="nonce" value="${nonceForm!?html}">
+        <input type="hidden" disabled="disabled" id="formDefKeys" value="${formDefKeys!}">
         <input type="hidden" disabled="disabled" id="popupDuplicate" value="${element.properties.showPopupDuplicate!}">
         <#if (element.properties.disabledDelete! != 'true' && element.properties.readonly! != 'true') && element.properties.checkboxDisable! != 'true'>
             <button type="button" class="btn btn-outline-danger btn-sm delete_btn" id="${elementParamName!}_${element.properties.elementUniqueKey!}_delete" style="display:none;width:fit-content;border-color:#dc3545 !important;"><i class="fas fa-trash-alt"></i></button>
