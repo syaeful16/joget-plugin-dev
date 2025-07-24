@@ -4,7 +4,8 @@
     <#if !(request.getAttribute("com.syan.dev.lib.FormGridCustom")??) >
         <script type="text/javascript" src="${request.contextPath}/plugin/com.syan.dev.lib.FormGridCustom/js/jquery.formGridCustom.js"></script>
         <script type="text/javascript" src="${request.contextPath}/plugin/com.syan.dev.lib.FormGridCustom/js/jquery.gridPagingCustom.js"></script>
-        <script type="text/javascript" src="${request.contextPath}/plugin/com.syan.dev.lib.FormGridCustom/js/jquery.formGridCustom.checkboxTools.js"></script>
+        <script type="text/javascript" src="${request.contextPath}/plugin/com.syan.dev.lib.FormGridCustom/js/jquery.formGridCustom.remake.js"></script>
+        <script type="text/javascript" src="${request.contextPath}/plugin/com.syan.dev.lib.FormGridCustom/js/jquery.utils.js"></script>
     </#if>
         <script type="text/javascript">
         $(document).ready(function() {
