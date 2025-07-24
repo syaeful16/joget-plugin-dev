@@ -4,3 +4,11 @@
 {
     display: none;
 }
+
+.grid-action-duplicate {
+    width: auto;
+    height: auto;
+    display: flex !important;
+    align-items: center;
+    justify-items: center;
+}
