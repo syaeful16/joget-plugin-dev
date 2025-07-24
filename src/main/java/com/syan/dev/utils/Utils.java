@@ -1,5 +1,6 @@
 package com.syan.dev.utils;
 
+import org.joget.commons.util.LogUtil;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -21,30 +22,26 @@ public class Utils {
     public static String extractFieldIds(String jsonString) {
         JSONObject root = new JSONObject(jsonString);
         JSONArray elements = root.optJSONArray("elements");
+        LogUtil.info("Util 1", elements.toString());
 
         List<String> ids = new ArrayList<>();
         extractIdsRecursive(elements, ids);
 
-        return String.join(",", ids);  // Bisa juga pakai "\n"
+        return String.join(",", ids);
     }
 
     private static void extractIdsRecursive(JSONArray elements, List<String> ids) {
         if (elements == null) return;
 
-        for (int i = 0; i < elements.length(); i++) {
-            JSONObject element = elements.optJSONObject(i);
-            if (element == null) continue;
+        JSONArray array = elements.getJSONObject(0).getJSONArray("elements").getJSONObject(0).getJSONArray("elements");
+        LogUtil.info("Utils 2", array.toString());
 
-            // Cek apakah punya properties.id
-            JSONObject props = element.optJSONObject("properties");
-            if (props != null && props.has("id")) {
-                ids.add(props.optString("id"));
-            }
+        for (int i = 0; i < array.length(); i++) {
+            JSONObject objectProperties = array.getJSONObject(i).getJSONObject("properties");
 
-            // Telusuri anak-anaknya (jika ada)
-            JSONArray childElements = element.optJSONArray("elements");
-            if (childElements != null) {
-                extractIdsRecursive(childElements, ids);
+            if (objectProperties.has("id")) {
+                String resultID = objectProperties.optString("id");
+                ids.add(resultID);
             }
         }
     }
