@@ -6,6 +6,7 @@
 
         init: function(args) {
             messages = args.messages;
+            console.log(messages)
 
             return this.each(function(){
                 var thisObj = $(this);
@@ -19,6 +20,7 @@
                 }
 
                 $(this).find(".grid-row").each(function(rowIndex, row) {
+                    console.log(rowIndex, row)
                     var json = $(row).find("textarea").val();
                     methods.decorateRow(row);
                     //methods.fillValue(row, json);
@@ -360,6 +362,7 @@
         },
 
         decorateRow: function(row) {
+            console.log(row)
             var td = $('<td class="grid-action-cell"></td>');
             $(td).append('<a class="grid-action-duplicate far fa-copy" href="#" title="'+ messages['form.formgrid.duplicateRow'] +'"><span>'+ messages['form.formgrid.duplicateRow'] +'</span></a>');
             $(td).append('<a class="grid-action-edit" href="#" title="'+ messages['form.formgrid.editRow'] +'"><span>'+ messages['form.formgrid.editRow'] +'</span></a>');
@@ -672,7 +675,8 @@
         fillValue: methods.fillValue,
         updateRowIndex: methods.updateRowIndex,
         disabledMoveAction: methods.disabledMoveAction,
-        showHidePlusIcon: methods.showHidePlusIcon
+        showHidePlusIcon: methods.showHidePlusIcon,
+        decorateRow: methods.decorateRow
     };
 
     $.fn.formGridCustom = function( method ) {

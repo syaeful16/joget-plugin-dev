@@ -114,6 +114,8 @@
 
                 newRow.find(".grid-checkbox-children").prop("checked", false);
 
+                $.formGridCustom.decorateRow(newRow);
+
                 $.formGridCustom.fillValue(container, newRow, JSON.stringify(rowData));
                 table.append(newRow);
 
