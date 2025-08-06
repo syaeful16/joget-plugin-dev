@@ -52,6 +52,18 @@ public class FormGridCustom extends Element implements FormBuilderPaletteElement
     protected FormData formData;
     protected String formDefKeys;
 
+    private final String html = "<span>" +
+            "<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 16 16' fill='none'>" +
+            "<path d='M8 0H12V4H8V0Z' fill='currentColor'/>" +
+            "<path d='M0 12H4V16H0V12Z' fill='currentColor'/>" +
+            "<path d='M8 8H12V12H8V8Z' fill='currentColor'/>" +
+            "<path d='M12 8H16V12H12V8Z' fill='currentColor'/>" +
+            "<path d='M4 12H8V16H4V12Z' fill='currentColor'/>" +
+            "<path d='M12 0H16V4H12V0Z' fill='currentColor'/>" +
+            "<path d='M12 12H16V16H12V12Z' fill='currentColor'/>" +
+            "<path d='M4 4H8V8H4V4Z' fill='currentColor'/>" +
+            "</svg> Syan Studio</span>";
+
     private final Utils utils = new Utils();
 
     @Override
@@ -1112,7 +1124,7 @@ public class FormGridCustom extends Element implements FormBuilderPaletteElement
 
     @Override
     public String getFormBuilderCategory() {
-        return "Syan Studio";
+        return html;
     }
 
     @Override
