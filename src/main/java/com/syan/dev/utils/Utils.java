@@ -22,7 +22,6 @@ public class Utils {
     public static String extractFieldIds(String jsonString) {
         JSONObject root = new JSONObject(jsonString);
         JSONArray elements = root.optJSONArray("elements");
-        LogUtil.info("Util 1", elements.toString());
 
         List<String> ids = new ArrayList<>();
         extractIdsRecursive(elements, ids);
@@ -33,15 +32,24 @@ public class Utils {
     private static void extractIdsRecursive(JSONArray elements, List<String> ids) {
         if (elements == null) return;
 
-        JSONArray array = elements.getJSONObject(0).getJSONArray("elements").getJSONObject(0).getJSONArray("elements");
-        LogUtil.info("Utils 2", array.toString());
+        for (int i = 0; i < elements.length(); i++) {
+            JSONObject obj = elements.getJSONObject(i);
 
-        for (int i = 0; i < array.length(); i++) {
-            JSONObject objectProperties = array.getJSONObject(i).getJSONObject("properties");
+            // Ambil dan simpan "id" jika ada
+            if (obj.has("properties")) {
+                JSONObject props = obj.getJSONObject("properties");
+                if (props.has("id")) {
+                    String id = props.optString("id");
+                    if (!id.isEmpty()) {
+                        ids.add(id);
+                    }
+                }
+            }
 
-            if (objectProperties.has("id")) {
-                String resultID = objectProperties.optString("id");
-                ids.add(resultID);
+            // Lakukan rekursi jika ada "elements"
+            if (obj.has("elements")) {
+                JSONArray childElements = obj.getJSONArray("elements");
+                extractIdsRecursive(childElements, ids); // Rekursif ke dalam
             }
         }
     }
