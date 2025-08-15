@@ -6,7 +6,6 @@
 
         init: function(args) {
             messages = args.messages;
-            console.log(messages)
 
             return this.each(function(){
                 var thisObj = $(this);
@@ -20,7 +19,6 @@
                 }
 
                 $(this).find(".grid-row").each(function(rowIndex, row) {
-                    console.log(rowIndex, row)
                     var json = $(row).find("textarea").val();
                     methods.decorateRow(row);
                     //methods.fillValue(row, json);
@@ -133,16 +131,16 @@
                 // Ambil isi JSON dari textarea dalam row
                 var json = $(row).find("textarea").val();
                 if (!json) {
-                    console.warn("Tidak ada data untuk diduplikasi.");
+                    console.warn("No data needs to be duplicated.");
                     return;
                 }
 
                 var parsed;
                 try {
                     parsed = JSON.parse(json);
-                    parsed.id = syanUtils.generateUUID()
+                    parsed.id = syanUtils.generateUUID();
                 } catch (e) {
-                    console.error("JSON tidak valid:", e);
+                    console.error("JSON not valid:", e);
                     return;
                 }
 
@@ -176,7 +174,7 @@
                     var args = { result: resultJson };
 
                     if (!methods.checkDuplicate(container, args)) {
-                        alert("Data duplikat ditemukan. Tidak bisa menambahkan row yang sama persis.");
+                        console.warn("Duplicate data found. Cannot add exactly the same row.");
                         return;
                     }
 
@@ -195,12 +193,12 @@
                     methods.decorateRow(newRow);
                     methods.fillValue(container, newRow, resultJson);
 
-                    // Append ke table
-                    table.append(newRow);
+                    // === Perubahan utama ===
+                    // Sisipkan row baru tepat setelah row yang diduplikasi
+                    $(row).after(newRow);
 
-                    // Hitung ulang index
-                    var rowIndex = $(table).find("tr.grid-row").length - 1;
-                    methods.updateRowIndex(newRow, rowIndex);
+                    // Update seluruh index karena posisi berubah
+                    methods.updateAllRowIndex(table);
                     methods.disabledMoveAction($(newRow).closest("table"));
 
                     // Trigger event & update UI
@@ -362,7 +360,6 @@
         },
 
         decorateRow: function(row) {
-            console.log(row)
             var td = $('<td class="grid-action-cell"></td>');
             $(td).append('<a class="grid-action-duplicate far fa-copy" href="#" title="'+ messages['form.formgrid.duplicateRow'] +'"><span>'+ messages['form.formgrid.duplicateRow'] +'</span></a>');
             $(td).append('<a class="grid-action-edit" href="#" title="'+ messages['form.formgrid.editRow'] +'"><span>'+ messages['form.formgrid.editRow'] +'</span></a>');
