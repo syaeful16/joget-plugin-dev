@@ -2,14 +2,10 @@
     var contextPath;
     var messages;
 
-    console.log("jquery enterprise loaded")
-
     var methods = {
 
         init: function(args) {
             messages = args.messages;
-
-            console.log(messages);
 
             return this.each(function(){
                 var thisObj = $(this);
@@ -64,7 +60,6 @@
 
         add: function() {
             return this.each(function(){
-                console.log("attr id - add : " + $(this).attr('id')+"_add")
                 methods.popupForm.call(this, $(this).attr('id'), $(this).find('#formUrl').val(), $(this).find('#json').val(), $(this).find('#nonce').val(), $(this).attr('id')+"_add", "{}", "", $(this).find('#height').val(), $(this).find('#width').val());
             });
         },
@@ -73,7 +68,6 @@
             var row = $(this).closest("tr");
             var container = $(row).closest("table").parent();
 
-            console.log("attr id - edit : " + $(container).attr('id')+"_edit")
             methods.popupForm.call(this, $(container).attr('id'), $(container).find('#formUrl').val(), $(container).find('#json').val(), $(container).find('#nonce').val(), $(container).attr('id')+"_edit", "{rowId:'"+$(row).attr('id')+"'}", $(row).find('textarea').val(), $(container).find('#height').val(), $(container).find('#width').val());
         },
 
@@ -83,9 +77,6 @@
 
             var funcName = $(container).attr('id')+"_duplicate";
 
-            console.log("row : " + row);
-            console.log("container : " + container);
-            console.log("attr id - duplicate : " + $(container).attr('id')+"_duplicate");
             // Cek jika fungsi ada di global scope (window)
             if (typeof window[funcName] === 'function') {
                 window[funcName].call(this); // panggil fungsi dengan konteks elemen
@@ -140,21 +131,17 @@
                 // Ambil isi JSON dari textarea dalam row
                 var json = $(row).find("textarea").val();
                 if (!json) {
-                    console.warn("Tidak ada data untuk diduplikasi.");
+                    console.warn("No data needs to be duplicated.");
                     return;
                 }
 
                 var parsed;
                 try {
                     parsed = JSON.parse(json);
+                    parsed.id = syanUtils.generateUUID();
                 } catch (e) {
-                    console.error("JSON tidak valid:", e);
+                    console.error("JSON not valid:", e);
                     return;
-                }
-
-                // Buat duplikat aman: hapus ID atau ganti field unik jika perlu
-                if (parsed.id) {
-                    delete parsed.id;
                 }
 
                 // Hapus dari _tempRequestParamsMap juga
@@ -162,15 +149,11 @@
                     delete parsed._tempRequestParamsMap.id;
                 }
 
-                console.log("Before")
-                console.log(parsed)
                 // Contoh: ganti nilai kolom unik agar tidak gagal saat checkDuplicate
                 var uniqueKey = $(container).find('#uniqueKey').val();
                 if (uniqueKey && parsed[uniqueKey]) {
                     parsed[uniqueKey] += "_copy_" + Date.now(); // agar makin unik
                 }
-                console.log("After")
-                console.log(parsed)
 
                 var resultJson = JSON.stringify(parsed);
 
@@ -191,7 +174,7 @@
                     var args = { result: resultJson };
 
                     if (!methods.checkDuplicate(container, args)) {
-                        alert("Data duplikat ditemukan. Tidak bisa menambahkan row yang sama persis.");
+                        console.warn("Duplicate data found. Cannot add exactly the same row.");
                         return;
                     }
 
@@ -210,12 +193,12 @@
                     methods.decorateRow(newRow);
                     methods.fillValue(container, newRow, resultJson);
 
-                    // Append ke table
-                    table.append(newRow);
+                    // === Perubahan utama ===
+                    // Sisipkan row baru tepat setelah row yang diduplikasi
+                    $(row).after(newRow);
 
-                    // Hitung ulang index
-                    var rowIndex = $(table).find("tr.grid-row").length - 1;
-                    methods.updateRowIndex(newRow, rowIndex);
+                    // Update seluruh index karena posisi berubah
+                    methods.updateAllRowIndex(table);
                     methods.disabledMoveAction($(newRow).closest("table"));
 
                     // Trigger event & update UI
@@ -268,7 +251,6 @@
         editRow: function(args){
             return $(this).each(function(){
                 var frameId = methods.getFrameId($(this).attr('id'));
-                console.log(args.rowId);
 
                 if (methods.checkDuplicate(this, args) && !$(this).hasClass("readonly")) {
                     // get table
@@ -409,11 +391,6 @@
         },
 
         fillValue: function(element, row, json) {
-            console.log('====== fill value ======');
-            console.log(element);
-            console.log(row);
-            console.log(json);
-            console.log('====== end fill value ======');
             var obj = eval("["+json+"]");
             $(row).find('span.grid-cell').each(function(){
                 var column = $(this).attr("column_key");
@@ -691,9 +668,15 @@
         }
     };
 
-    $.fn.formGridCustom = function( method ) {
-        console.log(method)
+    $.formGridCustom = {
+        fillValue: methods.fillValue,
+        updateRowIndex: methods.updateRowIndex,
+        disabledMoveAction: methods.disabledMoveAction,
+        showHidePlusIcon: methods.showHidePlusIcon,
+        decorateRow: methods.decorateRow
+    };
 
+    $.fn.formGridCustom = function( method ) {
         if ( methods[method] ) {
             return methods[method].apply( this, Array.prototype.slice.call( arguments, 1 ));
         } else if ( typeof method === 'object' || ! method ) {

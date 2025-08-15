@@ -4,7 +4,8 @@
     <#if !(request.getAttribute("com.syan.dev.lib.FormGridCustom")??) >
         <script type="text/javascript" src="${request.contextPath}/plugin/com.syan.dev.lib.FormGridCustom/js/jquery.formGridCustom.js"></script>
         <script type="text/javascript" src="${request.contextPath}/plugin/com.syan.dev.lib.FormGridCustom/js/jquery.gridPagingCustom.js"></script>
-        <script type="text/javascript" src="${request.contextPath}/plugin/com.syan.dev.lib.FormGridCustom/js/jquery.formGridCustom.checkboxTools.js"></script>
+        <script type="text/javascript" src="${request.contextPath}/plugin/com.syan.dev.lib.FormGridCustom/js/jquery.formGridCustom.remake.js"></script>
+        <script type="text/javascript" src="${request.contextPath}/plugin/com.syan.dev.lib.FormGridCustom/js/jquery.utils.js"></script>
     </#if>
         <script type="text/javascript">
         $(document).ready(function() {
@@ -54,6 +55,7 @@
         <input type="hidden" disabled="disabled" id="validateMaxRow" value="${element.properties.validateMaxRow!}">
         <input type="hidden" disabled="disabled" id="deleteMessage" value="${element.properties.deleteMessage!?html}">
         <input type="hidden" disabled="disabled" id="nonce" value="${nonceForm!?html}">
+        <input type="hidden" disabled="disabled" id="formDefKeys" value="${formDefKeys!}">
         <input type="hidden" disabled="disabled" id="popupDuplicate" value="${element.properties.showPopupDuplicate!}">
         <#if (element.properties.disabledDelete! != 'true' && element.properties.readonly! != 'true') && element.properties.checkboxDisable! != 'true'>
             <button type="button" class="btn btn-outline-danger btn-sm delete_btn" id="${elementParamName!}_${element.properties.elementUniqueKey!}_delete" style="display:none;width:fit-content;border-color:#dc3545 !important;"><i class="fas fa-trash-alt"></i></button>
