@@ -6,18 +6,3 @@
 
 ---
 
-## ✨ What is new?
-
-Version 1.0.0
-- 🔁 **Duplicate Row**  
-Duplikasikan baris data hanya dengan satu klik. Sangat berguna saat input data yang serupa secara berulang.
-- 🧰 **Meningkatkan Pengalaman Developer**  
-Fitur-fitur tambahan dirancang dengan mempertimbangkan kebutuhan umum para developer Joget.
-```javascript
-// Mengambil total yang di ceklis
-$('id_or_name').getTotalChecked()
-
-// Mengambil json value yang di ceklis
-$('id_or_name').getCheckedJsonData() // Ambil semua data
-$('id_or_name').getCheckedJsonData('name', 'address', ...) // Ambil semua data dengan key tertentu
-```
