@@ -1,11 +1,11 @@
 (function($) {
     // Tambahkan method langsung ke jQuery
-    $.fn.getTotalChecked = function() {
+    $.fn.countSelected = function() {
         return this.find('.grid-checkbox-children:checked:not(:disabled)').length;
     };
 
     // Ambil array JSON dari semua row yang dicentang
-    $.fn.getCheckedJsonData = function(...keysToInclude) {
+    $.fn.getValuesChecked = function(...keysToInclude) {
         let result = [];
 
         $(this).find('.grid-checkbox-children:checked:not(:disabled)').each(function() {
@@ -46,7 +46,7 @@
         return result;
     };
 
-    $.fn.getAllJsonData = function(...keysToInclude) {
+    $.fn.getValues = function(...keysToInclude) {
         let result = [];
 
         this.each(function() {
