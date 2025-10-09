@@ -113,7 +113,8 @@
 
             var table = $(thisObj).find("table");
             var options = $(table).data("pagingOptions");
-            var size = $(table).find("tr").length - 2;
+//            var size = $(table).find("tr").length - 2;
+            var size = $(table).find("tr.grid-row").not(".fg-hidden").length;
 
             if ($(thisObj).find(".pg-navigator").length > 0) {
                 $(thisObj).find(".pg-navigator").remove();
@@ -173,17 +174,15 @@
             var start = options.size * (page - 1) + 2;
             var end = options.size * page + 2;
 
-            $(table).find("tr").each(function (i){
-                if (i >= 2) {
-                    if (i >= start && i < end) {
-                        $(this).addClass("pg-tr-show");
-                        $(this).removeClass("pg-tr-hide");
-                    } else {
-                        $(this).removeClass("pg-tr-show");
-                        $(this).addClass("pg-tr-hide");
-                    }
+            var candidateRows = $(table).find("tr.grid-row").not(".fg-hidden"); // hanya row yg tidak difilter
+            candidateRows.each(function(i) {
+                if (i >= start - 2 && i < end - 2) {
+                    $(this).addClass("pg-tr-show").removeClass("pg-tr-hide").show();
+                } else {
+                    $(this).removeClass("pg-tr-show").addClass("pg-tr-hide").hide();
                 }
             });
+
 
             $(thisObj).find(".pg-navigator .pg-normal[rel="+page+"]").addClass("pg-current");
         }
