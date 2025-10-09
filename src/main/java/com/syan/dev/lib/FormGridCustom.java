@@ -80,17 +80,15 @@ public class FormGridCustom extends Element implements FormBuilderPaletteElement
         dataModel.put("headers", headers);
 
         String optionsJson = this.getOptionsJson(headers, formData);
-        LogUtil.info(this.getClassName(), "Options JSON : " + optionsJson);
         dataModel.put("optionsJson", optionsJson);
 
         FormRowSet rows = this.getRows(formData);
         if (rows != null && !rows.isEmpty()) {
             for (FormRow row : rows) {
                 JSONObject json = new JSONObject(row);
-                LogUtil.info(this.getClassName(), "Row JSON: " + json);
             }
         } else {
-            LogUtil.info(this.getClassName(), "No rows found.");
+            LogUtil.warn(this.getClassName(), "No rows found.");
         }
         dataModel.put("rows", rows);
 
@@ -162,15 +160,6 @@ public class FormGridCustom extends Element implements FormBuilderPaletteElement
     }
 
     public String formatColumn(String name, Map header, String recordId, String value, String appId, Long appVersion, String contextPath) {
-        LogUtil.info(getClass().getName(), "formatColumn called with -> " +
-                "name=" + name +
-                ", recordId=" + recordId +
-                ", value=" + value +
-                ", appId=" + appId +
-                ", appVersion=" + appVersion +
-                ", contextPath=" + contextPath +
-                ", header=" + (header != null ? header.toString() : "null"));
-
         String formatType = header != null ? (String) header.get("formatType") : null;
         String format = header != null ? (String) header.get("format") : null;
         StringBuilder result = new StringBuilder();
@@ -331,7 +320,6 @@ public class FormGridCustom extends Element implements FormBuilderPaletteElement
 
             if (optionProperty instanceof Collection) {
                 for (Object opt : (Collection<?>) optionProperty) {
-                    @SuppressWarnings("unchecked")
                     Map<String, Object> optMap = (Map<String, Object>) opt;
                     Object value = optMap.get("value");
                     Object label = optMap.get("label");
@@ -1010,7 +998,6 @@ public class FormGridCustom extends Element implements FormBuilderPaletteElement
     protected Form getForm() {
         if (this.form == null) {
             String formDefId = getPropertyString("formDefId");
-            LogUtil.info(this.getClassName(), "formDefId :  " + formDefId);
 
             if (formDefId.isEmpty()) {
                 if (getStoreBinder() instanceof FormBinder) {
