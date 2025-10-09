@@ -60,7 +60,7 @@
         <#if (element.properties.disabledDelete! != 'true' && element.properties.readonly! != 'true') && element.properties.checkboxDisable! != 'true'>
             <button type="button" class="btn btn-outline-danger btn-sm delete_btn" id="${elementParamName!}_${element.properties.elementUniqueKey!}_delete" style="display:none;width:fit-content;border-color:#dc3545 !important;"><i class="fas fa-trash-alt"></i></button>
         </#if>
-        <table cellspacing="0" style="width:100%;"  class="tablesaw tablesaw-stack" data-tablesaw-mode="stack">
+        <table cellspacing="0" style="width:100%;" class="tablesaw tablesaw-stack" data-tablesaw-mode="stack">
             <thead>
                 <tr>
                     <#if (element.properties.disabledDelete! != 'true' && element.properties.readonly! != 'true') && element.properties.checkboxDisable! != 'true'>
@@ -72,11 +72,13 @@
                         <th></th>
                     </#if>
                     <#list headers?keys as header>
-                        <#assign width = "">
-                        <#if headers[header]['width']?? && headers[header]['width'] != "">
-                            <#assign width = "width:" + headers[header]['width'] >
+                        <#if headers[header].visibility == "yes"> <!-- Cek visibility -->
+                            <#assign width = "">
+                            <#if headers[header]['width']?? && headers[header]['width'] != "">
+                                <#assign width = "width:" + headers[header]['width'] >
+                            </#if>
+                            <th id="${elementParamName!}_${header?html}" style="${width}">${headers[header]['label']!}</th>
                         </#if>
-                        <th id="${elementParamName!}_${header?html}" style="${width}">${headers[header]['label']!}</th>
                     </#list>
                     <th class="grid-action-header"></th>
                 </tr>
@@ -92,7 +94,9 @@
                         <td><span class="grid-cell rowNumber"></span></td>
                     </#if>
                     <#list headers?keys as header>
-                        <td><span id="${elementParamName!}_${header?html}"  name="${elementParamName!}_${header?html}" column_key="${header?html}" column_type="${headers[header]['formatType']!?html}" column_format="${headers[header]['format']!?html}" class="grid-cell"></span></td>
+                        <#if headers[header].visibility == "yes"> <!-- Cek visibility -->
+                            <td><span id="${elementParamName!}_${header?html}" name="${elementParamName!}_${header?html}" column_key="${header?html}" column_type="${headers[header]['formatType']!?html}" column_format="${headers[header]['format']!?html}" class="grid-cell"></span></td>
+                        </#if>
                     </#list>
                     <td style="display:none;"><textarea id="${elementParamName!}_jsonrow" name="${elementParamName!}_jsonrow"></textarea></td>
                 </tr>
@@ -107,15 +111,17 @@
                             <td><span class="grid-cell rowNumber">${row_index + 1}</span></td>
                         </#if>
                         <#list headers?keys as header>
-                            <td>
-                                <span id="${elementParamName!}_${header?html}" name="${elementParamName!}_${header?html}" column_key="${header?html}" column_type="${headers[header]['formatType']!?html}" column_format="${headers[header]['format']!?html}" class="grid-cell">
-                                    <#attempt>
-                                        ${element.formatColumn(header, headers[header], row["id"], row[header], appId, appVersion, request.contextPath)}
+                            <#if headers[header].visibility == "yes"> <!-- Cek visibility -->
+                                <td>
+                                    <span id="${elementParamName!}_${header?html}" name="${elementParamName!}_${header?html}" column_key="${header?html}" column_type="${headers[header]['formatType']!?html}" column_format="${headers[header]['format']!?html}" class="grid-cell">
+                                        <#attempt>
+                                            ${element.formatColumn(header, headers[header], row["id"], row[header], appId, appVersion, request.contextPath)}
                                         <#recover>
                                             ${row[header]!?html}
-                                    </#attempt>
-                                </span>
-                            </td>
+                                        </#attempt>
+                                    </span>
+                                </td>
+                            </#if>
                         </#list>
                         <td style="display:none;">
                             <textarea id="${elementParamName!}_jsonrow" name="${elementParamName!}_jsonrow_${row_index}">${row['jsonrow']!?html}</textarea>
