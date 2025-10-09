@@ -1136,7 +1136,7 @@ public class FormGridCustom extends Element implements FormBuilderPaletteElement
 
     @Override
     public String getVersion() {
-        return "1.0.0";
+        return "2.0.1";
     }
 
     @Override
