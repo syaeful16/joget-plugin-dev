@@ -1,14 +1,14 @@
 (function($) {
     // Tambahkan method langsung ke jQuery
     $.fn.getTotalChecked = function() {
-        return this.find('.grid-checkbox-children:checked').length;
+        return this.find('.grid-checkbox-children:checked:not(:disabled)').length;
     };
 
     // Ambil array JSON dari semua row yang dicentang
     $.fn.getCheckedJsonData = function(...keysToInclude) {
         let result = [];
 
-        $(this).find('.grid-checkbox-children:checked').each(function() {
+        $(this).find('.grid-checkbox-children:checked:not(:disabled)').each(function() {
             const row = $(this).closest('tr.grid-row');
 
             // 🚫 Skip jika baris sedang disembunyikan
@@ -84,7 +84,7 @@
         return result;
     };
 
-    $.fn.setData = function(dataArray) {
+    $.fn.setData = function(dataArray, { triggerChange = true } = {}) {
         const formDefKeys = $('#formDefKeys').val()?.split(',') || [];
 
         return this.each(function() {
@@ -95,21 +95,43 @@
             // Bersihkan baris yang bukan template
             table.find(".grid-row").not(".grid-row-template").remove();
 
+            const uniqueKey = container.find('#uniqueKey').val();
+            const seenValues = new Set(); // dedup dalam batch
+
             dataArray.forEach((dataObj, index) => {
-                // Tambahkan atau validasi ID
                 if (!dataObj.id || !syanUtils.isValidUUID(dataObj.id)) {
                     dataObj.id = syanUtils.generateUUID();
                 }
 
-                const rowData = { id: dataObj.id }; // Tambahkan id secara eksplisit
-
-                // Ambil hanya key yang sesuai dengan formDefKeys
+                const rowData = { id: dataObj.id };
                 formDefKeys.forEach(key => {
                     if (dataObj.hasOwnProperty(key)) {
                         rowData[key] = dataObj[key];
                     }
                 });
 
+                // 🚨 Dedup dalam batch
+                if (uniqueKey && rowData[uniqueKey] !== undefined) {
+                    const keyVal = String(rowData[uniqueKey]).trim();
+
+                    if (seenValues.has(keyVal)) {
+                        console.warn(`Duplicate ${uniqueKey} in batch: ${keyVal}`);
+                        return; // skip duplikat dalam dataArray
+                    }
+                    seenValues.add(keyVal);
+                }
+
+                // 🚨 Cek duplicate dengan data yang sudah ada (panggil plugin original)
+                const args = { result: JSON.stringify(rowData) };
+                if (typeof container.formGridCustom === "function") {
+                    const ok = container.formGridCustom("checkDuplicate", args);
+                    if (!ok) {
+                        console.warn(`Duplicate ${uniqueKey} in grid: ${rowData[uniqueKey]}`);
+                        return; // skip duplikat terhadap row existing
+                    }
+                }
+
+                // Tambah row baru
                 const newRow = template.clone()
                     .removeClass("grid-row-template")
                     .addClass("grid-row")
@@ -118,7 +140,6 @@
                 newRow.find(".grid-checkbox-children").prop("checked", false);
 
                 $.formGridCustom.decorateRow(newRow);
-
                 $.formGridCustom.fillValue(container, newRow, JSON.stringify(rowData));
                 table.append(newRow);
 
@@ -127,7 +148,10 @@
 
             $.formGridCustom.disabledMoveAction(table);
             $.formGridCustom.showHidePlusIcon(container);
-            container.trigger("change");
+
+            if (triggerChange) {
+                container.trigger("change");
+            }
         });
     };
 
@@ -178,19 +202,32 @@
 
     $.fn.hideRowsByCondition = function(conditionFn) {
         return this.each(function() {
-            $(this).find("tr.grid-row").each(function() {
-                const json = $(this).find("textarea").val();
+            const container = $(this);
+            container.find("tr.grid-row").each(function() {
+                const $row = $(this);
+                const $checkbox = $row.find('.grid-checkbox-children');
+                const json = $row.find("textarea").val();
+
                 try {
                     const data = JSON.parse(json);
                     if (conditionFn(data)) {
-                        $(this).show();
+                        $row.show().removeClass("fg-hidden pg-tr-hide").addClass("pg-tr-show");
+                        $checkbox.prop('disabled', false);
                     } else {
-                        $(this).hide();
+                        $row.hide().addClass("fg-hidden").removeClass("pg-tr-show").addClass("pg-tr-hide");
+                        $checkbox.prop('disabled', true);
                     }
                 } catch (e) {
                     console.warn("JSON error:", e);
+                    // fallback -> hidden
+                    $row.hide().removeClass("pg-tr-show").addClass("pg-tr-hide");
+                    $checkbox.prop('disabled', true);
                 }
             });
+
+            // refresh paging setelah filter
+            container.trigger("change");
+            container.gridPagingCustom("refresh");
         });
     };
 })(jQuery);
