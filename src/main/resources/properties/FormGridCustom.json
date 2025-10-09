@@ -80,6 +80,20 @@
           {
             "key" : "width",
             "label" : "@@form.formgrid.width@@"
+          },
+          {
+            "key": "visibility",
+            "label": "@@form.formgrid.visibility@@",
+            "options" : [
+              {
+                "value" : "yes",
+                "label" : "@@form.formgrid.visibility.yes@@"
+              },
+              {
+                "value" : "no",
+                "label" : "@@form.formgrid.visibility.no@@"
+              }
+            ]
           }
         ]
       }
