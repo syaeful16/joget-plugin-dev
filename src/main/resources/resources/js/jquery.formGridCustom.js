@@ -614,12 +614,28 @@
             //initialize the selected rows
             $(container).data("selected_rows", []);
 
-            //handle toggle all rows
+            //handle toggle all rows (parent checkbox)
             $(container).find(".grid-checkbox-parent").off('change').on('change', function(){
-                if ($(this).is(":checked")) {
-                    $(container).find(".grid-row .grid-checkbox-children").prop('checked', true).change();
-                }else{
-                    $(container).find(".grid-row .grid-checkbox-children").prop('checked', false).change();
+                var isChecked = $(this).is(":checked");
+                var checkboxes = $(container).find(".grid-row .grid-checkbox-children:not(:disabled)");
+
+                // set checked tanpa trigger event
+                checkboxes.prop('checked', isChecked);
+
+                // update selected_rows secara langsung
+                var arr = [];
+                if (isChecked) {
+                    checkboxes.each(function(){
+                        arr.push($(this).closest("td")[0]);
+                    });
+                }
+                $(container).data("selected_rows", arr);
+
+                // tampilkan/hilangkan delete button sekali saja
+                if (arr.length > 0) {
+                    $(container).find(".delete_btn").show();
+                } else {
+                    $(container).find(".delete_btn").hide();
                 }
             });
 
@@ -646,25 +662,37 @@
                 return false;
             });
 
-            //handle checkboxes of each rows
+            //handle checkboxes of each row (children)
             $(container).off('change.grid-row', ".grid-row .grid-checkbox-children")
-                    .on('change.grid-row', ".grid-row .grid-checkbox-children", function(){
-                var td = $(this).closest("td")[0];
-                var arr = $(container).data("selected_rows");
-                var index = arr.indexOf(td);
+                .on('change.grid-row', ".grid-row .grid-checkbox-children", function(){
+                    if ($(this).is(":disabled")) return; // abaikan child yg disable
 
-                if ($(td).closest("tr").hasClass("grid-row") && index === -1 && $(this).is(":checked")) {
-                    arr.push(td);  //element is checked but not exist in selected rows
-                } else if (!$(this).is(":checked") && index !== -1){
-                    arr.splice(index, 1); //element is not checked but exist in selected rows
-                }
+                    var td = $(this).closest("td")[0];
+                    var arr = $(container).data("selected_rows");
+                    var index = arr.indexOf(td);
 
-                if (arr.length > 0 && !$(container).find(".delete_btn").is(':visible')){
-                    $(container).find(".delete_btn").show();
-                } else if(arr.length === 0 && $(container).find(".delete_btn").is(':visible')){
-                    $(container).find(".delete_btn").hide();
-                }
-            });
+                    if ($(td).closest("tr").hasClass("grid-row") && index === -1 && $(this).is(":checked")) {
+                        arr.push(td);  //element is checked but not exist in selected rows
+                    } else if (!$(this).is(":checked") && index !== -1){
+                        arr.splice(index, 1); //element is not checked but exist in selected rows
+                    }
+
+                    if (arr.length > 0 && !$(container).find(".delete_btn").is(':visible')){
+                        $(container).find(".delete_btn").show();
+                    } else if(arr.length === 0 && $(container).find(".delete_btn").is(':visible')){
+                        $(container).find(".delete_btn").hide();
+                    }
+
+                    // === update parent state otomatis ===
+                    var total = $(container).find(".grid-row .grid-checkbox-children:not(:disabled)").length;
+                    var checked = $(container).find(".grid-row .grid-checkbox-children:not(:disabled):checked").length;
+
+                    if (checked === total && total > 0) {
+                        $(container).find(".grid-checkbox-parent").prop('checked', true);
+                    } else {
+                        $(container).find(".grid-checkbox-parent").prop('checked', false);
+                    }
+                });
         }
     };
 
@@ -688,4 +716,3 @@
     };
 
 })( jQuery );
-
