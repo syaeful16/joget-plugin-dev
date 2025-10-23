@@ -56,6 +56,10 @@
                 "label" : "@@form.formgrid.formatType.decimal@@"
               },
               {
+                "value" : "currency",
+                "label" : "@@form.formgrid.formatType.currency@@"
+              },
+              {
                 "value" : "date",
                 "label" : "@@form.formgrid.formatType.date@@"
               },
