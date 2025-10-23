@@ -459,6 +459,74 @@
                             value = parseFloat(value);
                             value = value.toFixed(parseInt(format));
                         }catch(e){}
+                    } else if (type != undefined && type === "currency" && value !== "") {
+                          try {
+                              var pattern = format || "#,###.##"; // default pattern
+                              var num = parseFloat(String(value).replace(/[^\d\.\-]/g, "")) || 0;
+
+                              // deteksi prefix dan suffix
+                              var prefix = "";
+                              var suffix = "";
+                              var numberPattern = pattern;
+
+                              if (pattern.includes("|")) {
+                                  var parts = pattern.split("|");
+                                  if (pattern.indexOf("|") === 0) {
+                                      // contoh: "|#.###,##USD" → suffix
+                                      numberPattern = parts[1];
+                                      suffix = parts[0].replace("|", "");
+                                  } else if (pattern.endsWith("|")) {
+                                      // contoh: "Rp|" → prefix saja
+                                      prefix = parts[0];
+                                  } else {
+                                      // contoh: "Rp|#.###,##" atau "#.###,##|USD"
+                                      if (parts[0].match(/[#0.,]/)) {
+                                          numberPattern = parts[0];
+                                          suffix = parts[1];
+                                      } else {
+                                          prefix = parts[0];
+                                          numberPattern = parts[1];
+                                      }
+                                  }
+                              }
+
+                              // === deteksi pemisah ribuan & desimal (lebih akurat) ===
+                              var useEuropeanFormat = numberPattern.indexOf('.') < numberPattern.indexOf(',') && numberPattern.indexOf(',') !== -1;
+                              var thousandSep = useEuropeanFormat ? '.' : ',';
+                              var decimalSep = useEuropeanFormat ? ',' : '.';
+
+                              // === hitung jumlah digit desimal dengan benar ===
+                              var decimalIndex = Math.max(numberPattern.lastIndexOf('.'), numberPattern.lastIndexOf(','));
+                              var decimalPlaces = 0;
+                              if (decimalIndex !== -1 && decimalIndex < numberPattern.length - 1) {
+                                  var decimalPart = numberPattern.substring(decimalIndex + 1);
+                                  decimalPlaces = decimalPart.replace(/[^#0]/g, '').length;
+                              }
+
+                              // pembulatan angka sesuai decimalPlaces
+                              var fixed = num.toFixed(decimalPlaces);
+                              var parts = fixed.split('.');
+                              var intPart = parts[0];
+                              var decPart = parts[1] || "";
+
+                              // tambahkan thousand separator
+                              var rgx = /(\d+)(\d{3})/;
+                              while (rgx.test(intPart)) {
+                                  intPart = intPart.replace(rgx, '$1' + thousandSep + '$2');
+                              }
+
+                              // gabungkan integer dan decimal
+                              var formatted = intPart;
+                              if (decimalPlaces > 0 && decPart !== "") {
+                                  formatted += decimalSep + decPart;
+                              }
+
+                              // gabungkan prefix & suffix
+                              value = (prefix ? prefix + " " : "") + formatted + (suffix ? " " + suffix : "");
+
+                          } catch (e) {
+                              console.error("Format currency error:", e, value);
+                          }
                     } else if (type != undefined && type == "date" && format != undefined && format != "" && value != "") {
                         try{
                             if (format.indexOf("UTC") === 0) {
