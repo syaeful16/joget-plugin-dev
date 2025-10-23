@@ -84,7 +84,7 @@
         return result;
     };
 
-    $.fn.setData = function(dataArray, { triggerChange = true } = {}) {
+    $.fn.setValues = function(dataArray, { triggerChange = true } = {}) {
         const formDefKeys = $('#formDefKeys').val()?.split(',') || [];
 
         return this.each(function() {
@@ -228,6 +228,54 @@
             // refresh paging setelah filter
             container.trigger("change");
             container.gridPagingCustom("refresh");
+        });
+    };
+
+    $.fn.clearAllRows = function() {
+        return this.each(function() {
+            const container = $(this);
+            const table = container.find("> table");
+
+            // Hapus semua row yang bukan template
+            table.find("tr.grid-row").not(".grid-row-template").remove();
+
+            // Update tampilan & kontrol
+            $.formGridCustom.disabledMoveAction(table);
+            $.formGridCustom.showHidePlusIcon(container);
+
+            // Trigger change supaya event listener tahu ada perubahan
+            container.trigger("change");
+        });
+    };
+
+    $.fn.clearRowsByCondition = function(conditionFn) {
+        return this.each(function() {
+            const container = $(this);
+            const table = container.find("> table");
+
+            table.find("tr.grid-row").not(".grid-row-template").each(function() {
+                const $row = $(this);
+                const json = $row.find("textarea").val();
+
+                try {
+                    const data = JSON.parse(json);
+
+                    if (conditionFn(data)) {
+                        $row.remove();
+                    }
+                } catch (e) {
+                    console.warn("JSON error while clearing row:", e);
+                    // Jika JSON invalid, hapus row supaya tidak mengganggu
+                    $row.remove();
+                }
+            });
+
+            // Refresh tampilan & kontrol grid
+            $.formGridCustom.disabledMoveAction(table);
+            $.formGridCustom.showHidePlusIcon(container);
+
+            // Trigger event change supaya listener grid tahu ada update
+            container.trigger("change");
         });
     };
 })(jQuery);
