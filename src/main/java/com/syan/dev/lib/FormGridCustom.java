@@ -31,10 +31,12 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.File;
+import java.lang.reflect.Array;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.text.DateFormat;
 import java.text.DecimalFormat;
+import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
@@ -160,6 +162,8 @@ public class FormGridCustom extends Element implements FormBuilderPaletteElement
     }
 
     public String formatColumn(String name, Map header, String recordId, String value, String appId, Long appVersion, String contextPath) {
+        LogUtil.info(this.getClassName(), "Ini di jalankan");
+
         String formatType = header != null ? (String) header.get("formatType") : null;
         String format = header != null ? (String) header.get("format") : null;
         StringBuilder result = new StringBuilder();
@@ -168,7 +172,7 @@ public class FormGridCustom extends Element implements FormBuilderPaletteElement
 
         try {
             if (formatType != null && !formatType.isEmpty()) {
-
+                LogUtil.info("Form Grid Enhanced", "formatType : " + formatType);
                 // Decrypt jika perlu
                 if (SecurityUtil.hasSecurityEnvelope(value)) {
                     value = SecurityUtil.decrypt(value);
@@ -200,7 +204,22 @@ public class FormGridCustom extends Element implements FormBuilderPaletteElement
                             LogUtil.error(getClass().getName(), e, "Decimal formatting error");
                         }
                         break;
+                    case "currency":
+                        try {
+                            LogUtil.info("Currency Custom", "value : " + value + " format : " + format);
+                            if (value == null || value.isEmpty()) {
+                                value = "0";
+                            }
 
+                            // Jangan format di sisi Java
+                            // Cukup kirim nilai mentah ke frontend
+                            // Format "Rp|#.###,##" atau "#.###,##|USD" akan diproses di JavaScript
+                            result.append(StringEscapeUtils.escapeHtml4(value));
+                        } catch (Exception e) {
+                            LogUtil.error(getClass().getName(), e, "Currency formatting error");
+                            result.append(StringEscapeUtils.escapeHtml4(value));
+                        }
+                        break;
                     case "date":
                         try {
                             if (format != null && !format.isEmpty()) {
