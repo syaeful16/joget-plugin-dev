@@ -1,7 +1,23 @@
 (function($) {
     // Tambahkan method langsung ke jQuery
-    $.fn.countSelected = function() {
-        return this.find('.grid-checkbox-children:checked:not(:disabled)').length;
+    $.fn.countData = function({ checkedOnly = false, visibleOnly = false } = {}) {
+        let count = 0;
+        this.each(function() {
+            let selector = "tr.grid-row:not(.grid-row-template)";
+
+            if (checkedOnly) {
+                selector = ".grid-checkbox-children:checked:not(:disabled)";
+            }
+
+            let rows = $(this).find(selector);
+
+            if (visibleOnly) {
+                rows = rows.filter(":visible");
+            }
+
+            count += rows.length;
+        });
+        return count;
     };
 
     // Ambil array JSON dari semua row yang dicentang
