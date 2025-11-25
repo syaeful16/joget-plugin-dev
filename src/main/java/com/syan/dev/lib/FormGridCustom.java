@@ -207,14 +207,100 @@ public class FormGridCustom extends Element implements FormBuilderPaletteElement
                     case "currency":
                         try {
                             LogUtil.info("Currency Custom", "value : " + value + " format : " + format);
+
                             if (value == null || value.isEmpty()) {
                                 value = "0";
                             }
 
-                            // Jangan format di sisi Java
-                            // Cukup kirim nilai mentah ke frontend
-                            // Format "Rp|#.###,##" atau "#.###,##|USD" akan diproses di JavaScript
-                            result.append(StringEscapeUtils.escapeHtml4(value));
+                            double num = Double.parseDouble(value);
+
+                            // =============================
+                            // 1. PARSE PREFIX | PATTERN | SUFFIX
+                            // =============================
+                            String prefix = "";
+                            String numberPattern = format;
+                            String suffix = "";
+
+                            if (format.contains("|")) {
+                                String[] parts = format.split("\\|");
+
+                                if (format.startsWith("|")) {
+                                    suffix = parts.length > 1 ? parts[1] : "";
+                                    numberPattern = parts.length > 1 ? parts[1] : "#,###.##";
+
+                                } else if (format.endsWith("|")) {
+                                    prefix = parts[0];
+                                    numberPattern = "#,###.##";
+
+                                } else if (parts.length == 2) {
+                                    if (parts[0].matches(".*[#0.,].*")) {
+                                        numberPattern = parts[0];
+                                        suffix = parts[1];
+                                    } else {
+                                        prefix = parts[0];
+                                        numberPattern = parts[1];
+                                    }
+                                } else if (parts.length == 3) {
+                                    prefix = parts[0];
+                                    numberPattern = parts[1];
+                                    suffix = parts[2];
+                                }
+                            }
+
+                            // =============================
+                            // 2. DETECT THOUSAND & DECIMAL SEPARATOR
+                            // =============================
+                            boolean european =
+                                    numberPattern.indexOf('.') < numberPattern.indexOf(',') &&
+                                            numberPattern.indexOf(',') != -1;
+
+                            String thousandSep = european ? "." : ",";
+                            String decimalSep  = european ? "," : ".";
+
+                            // =============================
+                            // 3. DETECT DECIMAL PLACES FROM PATTERN
+                            // =============================
+                            int decimalPlaces = 0;
+                            int decimalIdx = Math.max(numberPattern.lastIndexOf("."), numberPattern.lastIndexOf(","));
+
+                            if (decimalIdx != -1 && decimalIdx < numberPattern.length() - 1) {
+                                String decimalPart = numberPattern.substring(decimalIdx + 1);
+                                decimalPlaces = decimalPart.replaceAll("[^#0]", "").length();
+                            }
+
+                            // =============================
+                            // 4. FORMAT NUMBER
+                            // =============================
+                            String fixed = String.format("%." + decimalPlaces + "f", num);
+                            String[] partsNum = fixed.split("\\.");
+
+                            String intPart = partsNum[0];
+                            String decPart = partsNum.length > 1 ? partsNum[1] : "";
+
+                            // tambahkan thousand separator
+                            StringBuilder sb = new StringBuilder(intPart);
+                            for (int i = sb.length() - 3; i > 0; i -= 3) {
+                                sb.insert(i, thousandSep);
+                            }
+                            intPart = sb.toString();
+
+                            // gabungkan integer + decimal
+                            StringBuilder formatted = new StringBuilder(intPart);
+                            if (decimalPlaces > 0) {
+                                formatted.append(decimalSep).append(decPart);
+                            }
+
+                            // =============================
+                            // 5. PREFIX + SUFFIX
+                            // =============================
+                            String output =
+                                    (prefix.isEmpty() ? "" : prefix + " ") +
+                                            formatted +
+                                            (suffix.isEmpty() ? "" : " " + suffix);
+
+                            // hasil akhir
+                            result.append(StringEscapeUtils.escapeHtml4(output));
+
                         } catch (Exception e) {
                             LogUtil.error(getClass().getName(), e, "Currency formatting error");
                             result.append(StringEscapeUtils.escapeHtml4(value));
@@ -1155,7 +1241,7 @@ public class FormGridCustom extends Element implements FormBuilderPaletteElement
 
     @Override
     public String getVersion() {
-        return "2.0.1";
+        return "2.0.2";
     }
 
     @Override
