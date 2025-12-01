@@ -298,7 +298,8 @@
         showHidePlusIcon : function (container) {
             var row = $(container).find('#validateMaxRow').val();
             if (row && row != null) {
-                var rowcount = $(container).find("tr").length - 2;
+                var rowcount = $(container).find("tr.grid-row:not(.grid-row-template)").length;
+
                 if (rowcount >= parseInt(row)) {
                     $(container).find(".grid-action-add").hide();
                 } else {
