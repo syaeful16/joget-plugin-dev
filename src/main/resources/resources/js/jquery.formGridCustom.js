@@ -686,7 +686,21 @@
             //handle toggle all rows (parent checkbox)
             $(container).find(".grid-checkbox-parent").off('change').on('change', function(){
                 var isChecked = $(this).is(":checked");
-                var checkboxes = $(container).find(".grid-row .grid-checkbox-children:not(:disabled)");
+
+                var checkboxes = $(container).find(".grid-row .grid-checkbox-children").filter(function() {
+                    // 1. Cek Native Property 'disabled'
+                    if (this.disabled) return false;
+
+                    // 2. Cek apakah ini row template? (Jangan diambil)
+                    var row = $(this).closest("tr.grid-row");
+                    if (row.hasClass("grid-row-template")) return false;
+
+                    // 3. Cek apakah row ini sedang di-hide oleh filter logic? (Jangan diambil)
+                    if (row.hasClass("fg-hidden")) return false;
+
+                    // Jika lolos semua filter, kembalikan true (elemen ini akan dicentang)
+                    return true;
+                });
 
                 // set checked tanpa trigger event
                 checkboxes.prop('checked', isChecked);
