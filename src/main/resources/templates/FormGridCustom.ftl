@@ -51,11 +51,11 @@
         <input type="hidden" disabled="disabled" id="contextPath" value="${request.contextPath}">
         <input type="hidden" disabled="disabled" id="height" value="${element.properties.height!}">
         <input type="hidden" disabled="disabled" id="width" value="${element.properties.width!}">
-        <input type="hidden" disabled="disabled" id="uniqueKey" value="${element.properties.uniqueKey!}">
+        <input type="hidden" disabled="disabled" class="uniqueKey" value="${element.properties.uniqueKey!}">
         <input type="hidden" disabled="disabled" id="validateMaxRow" value="${element.properties.validateMaxRow!}">
         <input type="hidden" disabled="disabled" id="deleteMessage" value="${element.properties.deleteMessage!?html}">
         <input type="hidden" disabled="disabled" id="nonce" value="${nonceForm!?html}">
-        <input type="hidden" disabled="disabled" id="formDefKeys" value="${formDefKeys!}">
+        <input type="hidden" disabled="disabled" class="formDefKeys" value="${formDefKeys!}">
         <input type="hidden" disabled="disabled" id="popupDuplicate" value="${element.properties.showPopupDuplicate!}">
         <#if (element.properties.disabledDelete! != 'true' && element.properties.readonly! != 'true') && element.properties.checkboxDisable! != 'true'>
             <button type="button" class="btn btn-outline-danger btn-sm delete_btn" id="${elementParamName!}_${element.properties.elementUniqueKey!}_delete" style="display:none;width:fit-content;border-color:#dc3545 !important;"><i class="fas fa-trash-alt"></i></button>
@@ -72,13 +72,12 @@
                         <th></th>
                     </#if>
                     <#list headers?keys as header>
-                        <#if headers[header].visibility == "yes"> <!-- Cek visibility -->
-                            <#assign width = "">
-                            <#if headers[header]['width']?? && headers[header]['width'] != "">
-                                <#assign width = "width:" + headers[header]['width'] >
-                            </#if>
-                            <th id="${elementParamName!}_${header?html}" style="${width}">${headers[header]['label']!}</th>
+                        <#assign visible = headers[header].visibility == "yes">
+                        <#assign width = "">
+                        <#if headers[header]['width']?? && headers[header]['width'] != "">
+                            <#assign width = "width:" + headers[header]['width'] >
                         </#if>
+                        <th id="${elementParamName!}_${header?html}" style="${width} <#if !visible>display:none;</#if>">${headers[header]['label']!}</th>
                     </#list>
                     <th class="grid-action-header"></th>
                 </tr>
@@ -94,9 +93,8 @@
                         <td><span class="grid-cell rowNumber"></span></td>
                     </#if>
                     <#list headers?keys as header>
-                        <#if headers[header].visibility == "yes"> <!-- Cek visibility -->
-                            <td><span id="${elementParamName!}_${header?html}" name="${elementParamName!}_${header?html}" column_key="${header?html}" column_type="${headers[header]['formatType']!?html}" column_format="${headers[header]['format']!?html}" class="grid-cell"></span></td>
-                        </#if>
+                        <#assign visible = headers[header].visibility == "yes">
+                        <td style="<#if !visible>display:none;</#if>"><span id="${elementParamName!}_${header?html}" name="${elementParamName!}_${header?html}" column_key="${header?html}" column_type="${headers[header]['formatType']!?html}" column_format="${headers[header]['format']!?html}" class="grid-cell"></span></td>
                     </#list>
                     <td style="display:none;"><textarea id="${elementParamName!}_jsonrow" name="${elementParamName!}_jsonrow"></textarea></td>
                 </tr>
@@ -111,17 +109,16 @@
                             <td><span class="grid-cell rowNumber">${row_index + 1}</span></td>
                         </#if>
                         <#list headers?keys as header>
-                            <#if headers[header].visibility == "yes"> <!-- Cek visibility -->
-                                <td>
-                                    <span id="${elementParamName!}_${header?html}" name="${elementParamName!}_${header?html}" column_key="${header?html}" column_type="${headers[header]['formatType']!?html}" column_format="${headers[header]['format']!?html}" class="grid-cell">
-                                        <#attempt>
-                                            ${element.formatColumn(header, headers[header], row["id"], row[header], appId, appVersion, request.contextPath)}
-                                        <#recover>
-                                            ${row[header]!?html}
-                                        </#attempt>
-                                    </span>
-                                </td>
-                            </#if>
+                            <#assign visible = headers[header].visibility == "yes">
+                            <td style="<#if !visible>display:none;</#if>">
+                                <span id="${elementParamName!}_${header?html}" name="${elementParamName!}_${header?html}" column_key="${header?html}" column_type="${headers[header]['formatType']!?html}" column_format="${headers[header]['format']!?html}" class="grid-cell">
+                                    <#attempt>
+                                        ${element.formatColumn(header, headers[header], row["id"], row[header], appId, appVersion, request.contextPath)}
+                                    <#recover>
+                                        ${row[header]!?html}
+                                    </#attempt>
+                                </span>
+                            </td>
                         </#list>
                         <td style="display:none;">
                             <textarea id="${elementParamName!}_jsonrow" name="${elementParamName!}_jsonrow_${row_index}">${row['jsonrow']!?html}</textarea>
