@@ -3,19 +3,33 @@
     $.fn.countData = function({ checkedOnly = false, visibleOnly = false } = {}) {
         let count = 0;
         this.each(function() {
-            let selector = "tr.grid-row:not(.grid-row-template)";
+            let elements;
 
             if (checkedOnly) {
-                selector = ".grid-checkbox-children:checked:not(:disabled)";
+                // Ambil semua yang dicentang dulu
+                elements = $(this).find(".grid-checkbox-children:checked");
+
+                // Filter manual agar PASTI membuang yang disabled
+                elements = elements.filter(function() {
+                    // Return false (buang) jika disabled property true
+                    if ($(this).prop('disabled') === true) return false;
+
+                    // Cek juga parent row-nya, jangan hitung jika row disembunyikan filter
+                    if ($(this).closest('tr').hasClass('fg-hidden')) return false;
+
+                    return true;
+                });
+            } else {
+                // Ambil row biasa, buang template
+                elements = $(this).find("tr.grid-row:not(.grid-row-template)");
             }
 
-            let rows = $(this).find(selector);
-
+            // Opsi tambahan: hanya hitung yang terlihat di layar (page aktif)
             if (visibleOnly) {
-                rows = rows.filter(":visible");
+                elements = elements.filter(":visible");
             }
 
-            count += rows.length;
+            count += elements.length;
         });
         return count;
     };
@@ -27,9 +41,8 @@
         $(this).find('.grid-checkbox-children:checked:not(:disabled)').each(function() {
             const row = $(this).closest('tr.grid-row');
 
-            // 🚫 Skip jika baris sedang disembunyikan
-            if (!row.is(':visible')) {
-                return;
+            if (row.hasClass('fg-hidden')) {
+                return; // Skip jika row disembunyikan oleh logic filter
             }
 
             const json = row.find('textarea').val();
@@ -101,17 +114,18 @@
     };
 
     $.fn.setValues = function(dataArray, { triggerChange = true } = {}) {
-        const formDefKeys = $('#formDefKeys').val()?.split(',') || [];
-
         return this.each(function() {
             const container = $(this);
+
+            const formDefKeys = container.find('.formDefKeys').val()?.split(',') || [];
+            const uniqueKey = container.find('.uniqueKey').val();
+
             const table = container.find("> table");
             const template = table.find(".grid-row-template");
 
             // Bersihkan baris yang bukan template
             table.find(".grid-row").not(".grid-row-template").remove();
 
-            const uniqueKey = container.find('#uniqueKey').val();
             const seenValues = new Set(); // dedup dalam batch
 
             dataArray.forEach((dataObj, index) => {
