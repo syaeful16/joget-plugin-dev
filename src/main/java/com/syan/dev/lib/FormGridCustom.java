@@ -89,9 +89,8 @@ public class FormGridCustom extends Element implements FormBuilderPaletteElement
             for (FormRow row : rows) {
                 JSONObject json = new JSONObject(row);
             }
-        } else {
-            LogUtil.warn(this.getClassName(), "No rows found.");
         }
+
         dataModel.put("rows", rows);
 
         String buttonLabel = "";
@@ -162,8 +161,6 @@ public class FormGridCustom extends Element implements FormBuilderPaletteElement
     }
 
     public String formatColumn(String name, Map header, String recordId, String value, String appId, Long appVersion, String contextPath) {
-        LogUtil.info(this.getClassName(), "Ini di jalankan");
-
         String formatType = header != null ? (String) header.get("formatType") : null;
         String format = header != null ? (String) header.get("format") : null;
         StringBuilder result = new StringBuilder();
@@ -172,7 +169,6 @@ public class FormGridCustom extends Element implements FormBuilderPaletteElement
 
         try {
             if (formatType != null && !formatType.isEmpty()) {
-                LogUtil.info("Form Grid Enhanced", "formatType : " + formatType);
                 // Decrypt jika perlu
                 if (SecurityUtil.hasSecurityEnvelope(value)) {
                     value = SecurityUtil.decrypt(value);
@@ -206,8 +202,6 @@ public class FormGridCustom extends Element implements FormBuilderPaletteElement
                         break;
                     case "currency":
                         try {
-                            LogUtil.info("Currency Custom", "value : " + value + " format : " + format);
-
                             if (value == null || value.isEmpty()) {
                                 value = "0";
                             }
