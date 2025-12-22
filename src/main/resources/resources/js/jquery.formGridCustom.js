@@ -126,55 +126,61 @@
             return $(this).each(function() {
                 var row = $(this).closest("tr");
                 var container = $(row).closest("table").parent();
-                var showPopup = $(container).find('#popupDuplicate').val();
+
+                // 1. AMBIL VALUE DARI ID YANG ADA DI FTL
+                var showPopup = $(container).find('.popupDuplicate').val();
+                var uniqueKey = $(container).find('.uniqueKey').val();
 
                 // Ambil isi JSON dari textarea dalam row
                 var json = $(row).find("textarea").val();
                 if (!json) {
-                    console.warn("No data needs to be duplicated.");
                     return;
                 }
 
                 var parsed;
                 try {
                     parsed = JSON.parse(json);
-                    parsed.id = syanUtils.generateUUID();
+                    parsed.id = syanUtils.generateUUID(); // Generate ID baru
                 } catch (e) {
                     console.error("JSON not valid:", e);
                     return;
                 }
 
-                // Hapus dari _tempRequestParamsMap juga
+                // Bersihkan temp params
                 if (parsed._tempRequestParamsMap && parsed._tempRequestParamsMap.id) {
                     delete parsed._tempRequestParamsMap.id;
                 }
 
-                // Contoh: ganti nilai kolom unik agar tidak gagal saat checkDuplicate
-                var uniqueKey = $(container).find('#uniqueKey').val();
+                // Handle unique key (tambah suffix agar tidak bentrok sementara)
                 if (uniqueKey && parsed[uniqueKey]) {
-                    parsed[uniqueKey] += "_copy_" + Date.now(); // agar makin unik
+                    parsed[uniqueKey] += "_copy_" + Math.floor(Math.random() * 1000);
                 }
 
                 var resultJson = JSON.stringify(parsed);
 
-                if (showPopup === 'true' || uniqueKey !== '') {
+                // === LOGIC PENENTU POPUP ===
+                // Buka popup JIKA:
+                // 1. Konfigurasi 'showPopupDuplicate' di FTL bernilai 'true'
+                // 2. ATAU ada uniqueKey (karena user harus edit manual field unik tersebut biar save berhasil)
+                if (showPopup === 'true' || (uniqueKey && uniqueKey !== '')) {
                     // === MODE PAKAI POPUP ===
                     methods.popupForm.call(this,
                         $(container).attr('id'),
                         $(container).find('#formUrl').val(),
                         $(container).find('#json').val(),
                         $(container).find('#nonce').val(),
-                        $(container).attr('id') + "_add", // callback
-                        "{}",                              // setting kosong
-                        resultJson,                        // data awal (prefilled)
+                        $(container).attr('id') + "_add", // callback diarahkan ke _add agar masuk sebagai row baru
+                        "{}",
+                        resultJson,                        // data row lama sebagai pre-filled value
                         $(container).find('#height').val(),
                         $(container).find('#width').val()
                     );
                 } else {
+                    // === MODE LANGSUNG DUPLIKAT (TANPA POPUP) ===
                     var args = { result: resultJson };
 
+                    // Cek duplikat di client side dulu
                     if (!methods.checkDuplicate(container, args)) {
-                        console.warn("Duplicate data found. Cannot add exactly the same row.");
                         return;
                     }
 
@@ -186,22 +192,21 @@
                     newRow.css("display", "");
                     newRow.addClass("grid-row");
 
-                    // Uncheck semua checkbox (jika ada)
+                    // Uncheck checkbox row baru
                     newRow.find(".grid-checkbox-children").prop("checked", false);
 
-                    // Isi value ke dalam row
+                    // Isi value & Decorate
                     methods.decorateRow(newRow);
                     methods.fillValue(container, newRow, resultJson);
 
-                    // === Perubahan utama ===
-                    // Sisipkan row baru tepat setelah row yang diduplikasi
+                    // Insert setelah row yang diduplikasi
                     $(row).after(newRow);
 
-                    // Update seluruh index karena posisi berubah
+                    // Update Index
                     methods.updateAllRowIndex(table);
                     methods.disabledMoveAction($(newRow).closest("table"));
 
-                    // Trigger event & update UI
+                    // Trigger Change
                     $(container).trigger("change");
                     methods.showHidePlusIcon(container);
                 }
@@ -272,22 +277,67 @@
 
         checkDuplicate : function (container, args) {
             var okToInsert = true;
-            var uniqueKey = $(container).find('#uniqueKey').val();
-            if (uniqueKey && uniqueKey != null) {
-                // find existing row
-                var obj = eval("[" + args.result + "]");
-                var uniqueVal = obj[0][uniqueKey];
+
+            // 1. Ambil Konfigurasi
+            var uniqueKey = $(container).find('.uniqueKey').val();
+            var customMsgTemplate = $(container).find('.uniqueKeyMessage').val();
+
+            // Setup UI Error
+            var $errorBox = $(container).find(".grid-validation-error");
+            var $errorContent = $errorBox.find(".error-content");
+            $errorBox.hide();
+
+            if (uniqueKey && uniqueKey != null && args.result) {
+                // Parse Data Baru
+                var obj;
+                try { obj = JSON.parse(args.result); } catch(e){ return false; }
+
+                var uniqueVal = $.isArray(obj) ? obj[0][uniqueKey] : obj[uniqueKey];
+
                 if (uniqueVal) {
-                    $(container).find(".grid-cell[column_key=" + uniqueKey + "]").each(function() {
-                        if (args.rowId && args.rowId != null) {
-                            var row = $(this).closest("tr");
-                            if ($(row).attr("id") == args.rowId) {
-                                return true;
-                            }
-                        }
-                        if ($.trim($(this).text()) == uniqueVal) {
+                    // Loop Cek Data Existing
+                    $(container).find(".grid-cell[column_key='" + uniqueKey + "']").each(function() {
+
+                        // Skip row diri sendiri saat edit
+                        if (args.rowId && $(this).closest("tr").attr("id") == args.rowId) return true;
+
+                        // Cek Kesamaan (Case Insensitive)
+                        if ($.trim($(this).text()).toLowerCase() == String(uniqueVal).toLowerCase()) {
                             okToInsert = false;
-                            return false;
+
+                            // === LOGIC GANTI MESSAGE {column} ===
+                            var finalMsg = "";
+
+                            // Cari Label Kolom dari Header Tabel (TH)
+                            // Biasanya ID header formatnya: namaGrid_namaKolom
+                            // Kita cari TH yang ID-nya berakhiran nama kolom
+                            var colLabel = uniqueKey; // Default pake ID kalo label ga ketemu
+                            var $header = $(container).find("th[id$='_" + uniqueKey + "']");
+
+                            if ($header.length > 0) {
+                                // Ambil teks header tapi buang spasi aneh2
+                                colLabel = $.trim($header.text());
+                            }
+
+                            if (customMsgTemplate) {
+                                // Replace {column} dengan Label (misal: "Nomor KTP")
+                                finalMsg = customMsgTemplate.replace(/{column}/g, colLabel);
+                                // Bonus: Replace {value} dengan Nilai (misal: "320123...")
+                                finalMsg = finalMsg.replace(/{value}/g, uniqueVal);
+                            } else {
+                                // Default Message jika user kosongin properti
+                                finalMsg = "Data <b>" + uniqueVal + "</b> sudah ada pada kolom <b>" + colLabel + "</b>.";
+                            }
+
+                            // Tampilkan Error
+                            $errorContent.html(finalMsg);
+                            $errorBox.slideDown();
+
+                            $('html, body').animate({
+                                scrollTop: $errorBox.offset().top - 100
+                            }, 500);
+
+                            return false; // Break loop
                         }
                     })
                 }
