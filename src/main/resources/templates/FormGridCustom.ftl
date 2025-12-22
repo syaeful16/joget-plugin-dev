@@ -52,6 +52,7 @@
         <input type="hidden" disabled="disabled" id="height" value="${element.properties.height!}">
         <input type="hidden" disabled="disabled" id="width" value="${element.properties.width!}">
         <input type="hidden" disabled="disabled" class="uniqueKey" value="${element.properties.uniqueKey!}">
+        <input type="hidden" disabled="disabled" class="uniqueKeyMessage" value="${element.properties.uniqueKeyMessage!}">
         <input type="hidden" disabled="disabled" id="validateMaxRow" value="${element.properties.validateMaxRow!}">
         <input type="hidden" disabled="disabled" id="deleteMessage" value="${element.properties.deleteMessage!?html}">
         <input type="hidden" disabled="disabled" id="nonce" value="${nonceForm!?html}">
@@ -60,6 +61,9 @@
         <#if (element.properties.disabledDelete! != 'true' && element.properties.readonly! != 'true') && element.properties.checkboxDisable! != 'true'>
             <button type="button" class="btn btn-outline-danger btn-sm delete_btn" id="${elementParamName!}_${element.properties.elementUniqueKey!}_delete" style="display:none;width:fit-content;border-color:#dc3545 !important;"><i class="fas fa-trash-alt"></i></button>
         </#if>
+        <div class="grid-validation-error" style="display:none; background-color: #f8d7da; color: #721c24; padding: 10px; margin-bottom: 10px; border: 1px solid #f5c6cb; border-radius: 4px;">
+            <i class="fas fa-exclamation-circle"></i> <span class="error-content"></span>
+        </div>
         <table cellspacing="0" style="width:100%;" class="tablesaw tablesaw-stack" data-tablesaw-mode="stack">
             <thead>
                 <tr>
