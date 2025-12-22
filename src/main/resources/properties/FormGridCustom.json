@@ -296,6 +296,13 @@
         "options_ajax" : "[CONTEXT_PATH]/web/json/console/app[APP_PATH]/form/columns/options"
       },
       {
+        "name" : "uniqueKeyMessage",
+        "label" : "Unique Key Validation Message",
+        "description" : "Use {column} to display the column label name, and {value} for the data value.\n",
+        "type" : "textfield",
+        "value" : "The data in the {column} column with the value {value} is already there!"
+      },
+      {
         "name" : "validateMinRow",
         "label" : "@@form.formgrid.validateMinRow@@",
         "type" : "textfield"
